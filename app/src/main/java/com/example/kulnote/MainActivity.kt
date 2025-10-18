@@ -55,7 +55,6 @@ fun KulNoteApp() {
     val scheduleViewModel: ScheduleViewModel = viewModel()
 
     Scaffold(
-        // ✅ PASTIKAN containerColor MENGGUNAKAN SURFACE DARI TEMA
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(

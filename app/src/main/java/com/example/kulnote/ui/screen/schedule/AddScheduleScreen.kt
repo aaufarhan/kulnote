@@ -136,8 +136,6 @@ fun AddScheduleScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
-                // ------------------------------------------------------------------
-                // 👇 COMPONENT DROPDOWN BARU UNTUK HARI (DAY)
                 ExposedDropdownMenuBox(
                     expanded = isExpanded,
                     onExpandedChange = { isExpanded = it },
@@ -172,8 +170,6 @@ fun AddScheduleScreen(
                         }
                     }
                 }
-                // ------------------------------------------------------------------
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
