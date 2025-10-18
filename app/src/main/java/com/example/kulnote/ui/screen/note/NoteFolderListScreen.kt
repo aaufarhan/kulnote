@@ -17,77 +17,51 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel // Import viewModel biasa
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kulnote.R
-import com.example.kulnote.data.viewmodel.JadwalViewModel // Import ViewModel
-import com.example.kulnote.data.model.MataKuliah // Import Model In-Memory
+import com.example.kulnote.data.viewmodel.JadwalViewModel
+import com.example.kulnote.data.model.MataKuliah
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteFolderListScreen(
     navController: NavController,
-    // TERIMA VIEWMODEL SEBAGAI PARAMETER WAJIB
-    viewModel: JadwalViewModel
+    viewModel: JadwalViewModel,
+    modifier: Modifier = Modifier
 ) {
     val mataKuliahList by viewModel.mataKuliahList.collectAsState()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "kulnote.",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+    if (mataKuliahList.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Your Desk is Empty. Add a blank notebook.",
+                fontSize = 18.sp,
+                textAlign = TextAlign.Center
             )
         }
-    ) { innerPadding ->
-        if (mataKuliahList.isEmpty()) {
-            // Tampilan kosong disesuaikan dengan desain target
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                // Teks disesuaikan: "Your desk is empty. Add a blank notebook."
-                Text(
-                    text = "Your Desk is Empty. Add a blank notebook.",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
+    } else {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(mataKuliahList, key = { it.id }) { mataKuliah ->
+                FolderItem(
+                    title = mataKuliah.namaMatkul,
+                    onClick = {
+                    }
                 )
             }
-        } else {
-            // Tampilkan daftar Mata Kuliah dalam grid folder
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Iterasi melalui daftar MataKuliah
-                items(mataKuliahList, key = { it.id }) { mataKuliah ->
-                    FolderItem(
-                        // Menggunakan namaMatkul dari Model In-Memory
-                        title = mataKuliah.namaMatkul,
-                        onClick = {
-                            // nanti diarahkan ke halaman daftar catatan matkul itu
-                            // navController.navigate("notes/${mataKuliah.id}")
-                        }
-                    )
-                }
-            }
         }
+
     }
 }
 
@@ -114,7 +88,6 @@ fun FolderItem(
             text = title,
             fontWeight = FontWeight.Medium,
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
