@@ -18,7 +18,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.kulnote.data.model.ScheduleInput
-import com.example.kulnote.data.viewmodel.JadwalViewModel
+import com.example.kulnote.data.viewmodel.ScheduleViewModel
 
 private val daysOfWeek = listOf(
     "Senin",
@@ -61,7 +61,7 @@ class TimeVisualTransformation : VisualTransformation {
 @Composable
 fun AddScheduleScreen(
     navController: NavController,
-    viewModel: JadwalViewModel
+    viewModel: ScheduleViewModel
 ) {
     var input by remember { mutableStateOf(ScheduleInput()) }
     val isButtonEnabled = remember(input) {
@@ -110,7 +110,7 @@ fun AddScheduleScreen(
                 OutlinedTextField(
                     value = input.namaMatkul,
                     onValueChange = { input = input.copy(namaMatkul = it) },
-                    label = { Text("Lecture *") },
+                    label = { Text("Course *") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

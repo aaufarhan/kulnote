@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -20,14 +22,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kulnote.R
-import com.example.kulnote.data.viewmodel.JadwalViewModel
+import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.data.model.MataKuliah
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteFolderListScreen(
     navController: NavController,
-    viewModel: JadwalViewModel,
+    viewModel: ScheduleViewModel,
     modifier: Modifier = Modifier
 ) {
     val mataKuliahList by viewModel.mataKuliahList.collectAsState()
@@ -78,26 +80,39 @@ fun FolderItem(
     title: String,
     onClick: () -> Unit
 ) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
+            .height(150.dp)
             .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.onPrimary
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_folder),
-            contentDescription = "Folder Icon",
+        Column(
             modifier = Modifier
-                .size(80.dp)
-                .padding(bottom = 8.dp)
-        )
-        Text(
-            text = title,
-            fontWeight = FontWeight.Medium,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_folder),
+                contentDescription = "Folder Icon",
+                modifier = Modifier
+                    .size(64.dp)
+                    .padding(bottom = 8.dp)
+            )
+
+            Text(
+                text = title,
+                fontWeight = FontWeight.Medium,
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

@@ -24,7 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.kulnote.data.viewmodel.JadwalViewModel
+import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun KulNoteApp() {
     val navController = rememberNavController()
-    val jadwalViewModel: JadwalViewModel = viewModel()
+    val scheduleViewModel: ScheduleViewModel = viewModel()
 
     Scaffold(
         // ✅ PASTIKAN containerColor MENGGUNAKAN SURFACE DARI TEMA
@@ -78,7 +78,7 @@ fun KulNoteApp() {
         NavigationGraph(
             navController = navController,
             modifier = Modifier.padding(innerPadding),
-            jadwalViewModel = jadwalViewModel
+            scheduleViewModel = scheduleViewModel
         )
     }
 }
@@ -88,7 +88,7 @@ fun KulNoteApp() {
 fun NavigationGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    jadwalViewModel: JadwalViewModel
+    scheduleViewModel: ScheduleViewModel
 ) {
     NavHost(
         navController = navController,
@@ -97,7 +97,7 @@ fun NavigationGraph(
     ) {
         // Halaman Default (Folder List)
         composable("note_folders") {
-            NoteFolderListScreen(navController, jadwalViewModel, modifier)
+            NoteFolderListScreen(navController, scheduleViewModel, modifier)
 
         }
         // Halaman Add Page
@@ -107,7 +107,7 @@ fun NavigationGraph(
         // Halaman Add Schedule
         composable("add_schedule") {
             // TERUSKAN ViewModel yang sama
-            AddScheduleScreen(navController, jadwalViewModel)
+            AddScheduleScreen(navController, scheduleViewModel)
         }
     }
 }

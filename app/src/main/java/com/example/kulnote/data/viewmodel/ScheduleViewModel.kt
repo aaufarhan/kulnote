@@ -1,23 +1,42 @@
 package com.example.kulnote.data.viewmodel
 
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
-import com.example.kulnote.data.model.Schedule
+import com.example.kulnote.data.model.MataKuliah
+import com.example.kulnote.data.model.ScheduleInput
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
+// ViewModel sebagai penyimpanan sementara (In-Memory Storage)
 class ScheduleViewModel : ViewModel() {
-    private val _schedules = mutableStateListOf<Schedule>()
-    val schedules: List<Schedule> = _schedules
 
-    init {
-        _schedules.addAll(
-            listOf(
-                Schedule(1, "Pemrograman Mobile", "08:00 - 09:40", "Ruang B201"),
-                Schedule(2, "Basis Data", "10:00 - 11:40", "Ruang A305")
-            )
+    // Penyimpanan data utama untuk daftar mata kuliah
+    private val _mataKuliahList = MutableStateFlow(mutableListOf<MataKuliah>())
+    val mataKuliahList: StateFlow<List<MataKuliah>> = _mataKuliahList.asStateFlow()
+
+    // FUNGSI: Logika untuk menyimpan data input ke memori
+    fun saveNewSchedule(input: ScheduleInput) {
+        if (input.namaMatkul.isBlank()) return // Hindari menyimpan data kosong
+
+        // 1. Buat ID unik sederhana
+        val matkulId = input.namaMatkul.filter { it.isLetterOrDigit() }.lowercase()
+
+        // 2. Buat objek MataKuliah baru
+        val newMatkul = MataKuliah(
+            id = matkulId,
+            namaMatkul = input.namaMatkul,
+            sks = input.sks.toIntOrNull() ?: 0,
+            dosen = input.dosen
         )
-    }
 
-    fun addSchedule(schedule: Schedule) {
-        _schedules.add(schedule)
+        // 3. Simpan ke dalam list (In-Memory)
+        _mataKuliahList.update { currentList ->
+            // Tambahkan objek baru ke list
+            currentList.apply { add(newMatkul) }
+        }
+
+        // Catatan: Data Schedule Kelas (hari, jam) diabaikan untuk sementara,
+        // hanya MataKuliah yang ditampilkan di folder.
     }
 }
