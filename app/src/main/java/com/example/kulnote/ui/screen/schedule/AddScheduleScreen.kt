@@ -156,7 +156,8 @@ fun AddScheduleScreen(
 
                     ExposedDropdownMenu(
                         expanded = isExpanded,
-                        onDismissRequest = { isExpanded = false }
+                        onDismissRequest = { isExpanded = false },
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         daysOfWeek.forEach { selectionOption ->
                             DropdownMenuItem(
