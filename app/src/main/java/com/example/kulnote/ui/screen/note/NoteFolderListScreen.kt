@@ -31,37 +31,45 @@ fun NoteFolderListScreen(
     modifier: Modifier = Modifier
 ) {
     val mataKuliahList by viewModel.mataKuliahList.collectAsState()
-
-    if (mataKuliahList.isEmpty()) {
-        Box(
-            modifier = modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Your Desk is Empty. Add a blank notebook.",
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-    } else {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(mataKuliahList, key = { it.id }) { mataKuliah ->
-                FolderItem(
-                    title = mataKuliah.namaMatkul,
-                    onClick = {
-                    }
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.onPrimary
+    )
+    { innerPadding ->
+        if (mataKuliahList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Your Desk is Empty. Add a blank notebook.",
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
             }
-        }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(mataKuliahList, key = { it.id }) { mataKuliah ->
+                    FolderItem(
+                        title = mataKuliah.namaMatkul,
 
+                        onClick = {
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
