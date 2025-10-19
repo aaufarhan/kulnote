@@ -20,14 +20,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
+import com.example.kulnote.ui.screen.note.NewNoteScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
+import com.example.kulnote.ui.screen.note.NoteListScreen
 import com.example.kulnote.ui.screen.schedule.AddScheduleScreen
 import com.example.kulnote.ui.theme.KulnoteTheme
 
@@ -53,6 +58,7 @@ class MainActivity : ComponentActivity() {
 fun KulNoteApp() {
     val navController = rememberNavController()
     val scheduleViewModel: ScheduleViewModel = viewModel()
+    val noteViewModel: NoteViewModel = viewModel()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -65,7 +71,6 @@ fun KulNoteApp() {
                         fontSize = 20.sp
                     )
                 },
-                // ✅ PASTIKAN TopAppBar MENGGUNAKAN WARNA DARI TEMA
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -77,7 +82,8 @@ fun KulNoteApp() {
         NavigationGraph(
             navController = navController,
             modifier = Modifier.padding(innerPadding),
-            scheduleViewModel = scheduleViewModel
+            scheduleViewModel = scheduleViewModel,
+            noteViewModel = noteViewModel
         )
     }
 }
@@ -87,7 +93,8 @@ fun KulNoteApp() {
 fun NavigationGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    scheduleViewModel: ScheduleViewModel
+    scheduleViewModel: ScheduleViewModel,
+    noteViewModel: NoteViewModel
 ) {
     NavHost(
         navController = navController,
@@ -107,6 +114,37 @@ fun NavigationGraph(
         composable("add_schedule") {
             // TERUSKAN ViewModel yang sama
             AddScheduleScreen(navController, scheduleViewModel)
+        }
+
+        composable("add_note") {
+            NewNoteScreen(
+                navController = navController,
+                scheduleViewModel = scheduleViewModel,
+                noteViewModel = noteViewModel
+            )
+        }
+
+        // RUTE UNTUK NOTE LIST SCREEN (Menerima Argumen ID)
+        composable(
+            // Mengganti {folderId} menjadi {matkulId}
+            route = "note_list_screen/{matkulId}",
+            arguments = listOf(
+                navArgument("matkulId") { // Mengganti "folderId" menjadi "matkulId"
+                    type = NavType.StringType
+                    nullable = true // Penting jika Anda ingin ID opsional, tapi sebaiknya tidak
+                    defaultValue = ""
+                }
+            )
+        ) { backStackEntry ->
+            // Mengambil matkulId
+            val matkulId = backStackEntry.arguments?.getString("matkulId") ?: ""
+
+            NoteListScreen(
+                navController = navController,
+                matkulId = matkulId,
+                scheduleViewModel = scheduleViewModel,
+                noteViewModel = noteViewModel
+            )
         }
     }
 }

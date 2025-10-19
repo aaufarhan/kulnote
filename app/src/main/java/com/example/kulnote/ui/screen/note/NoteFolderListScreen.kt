@@ -28,6 +28,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -77,11 +78,16 @@ fun NoteFolderListScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                item(span = { GridItemSpan(2) }) { // Span 2 agar Spacer mengisi seluruh lebar
+                    Spacer(modifier = Modifier.height(16.dp)) // Beri tinggi yang diinginkan
+                }
                 items(mataKuliahList, key = { it.id }) { mataKuliah ->
                     FolderItem(
                         title = mataKuliah.namaMatkul,
-
                         onClick = {
+                            val matkulId = mataKuliah.id
+                            // Navigasi ke rute baru menggunakan matkulId:
+                            navController.navigate("note_list_screen/$matkulId")
                         }
                     )
                 }

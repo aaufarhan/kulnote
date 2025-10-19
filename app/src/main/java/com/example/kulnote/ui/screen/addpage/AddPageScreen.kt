@@ -55,7 +55,7 @@ fun AddPageScreen(navController: NavController) {
             icon = R.drawable.ic_note_active,
             title = "Add Note"
         ) {
-            // navController.navigate("add_note")
+            navController.navigate("add_note")
         }
 
         Spacer(modifier = Modifier.height(20.dp))
