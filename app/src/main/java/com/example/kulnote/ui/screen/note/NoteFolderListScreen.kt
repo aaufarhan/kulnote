@@ -23,7 +23,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kulnote.R
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
-import com.example.kulnote.data.model.MataKuliah
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,39 +95,72 @@ fun FolderItem(
     title: String,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(150.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.onPrimary
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_folder),
-                contentDescription = "Folder Icon",
-                modifier = Modifier
-                    .size(64.dp)
-                    .padding(bottom = 8.dp)
-            )
+    var visible by remember { mutableStateOf(false) }
+    var isPressed by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
-            Text(
-                text = title,
-                fontWeight = FontWeight.Medium,
-                fontSize = 15.sp,
-                textAlign = TextAlign.Center
-            )
+    // animasi fade-in saat pertama kali tampil
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    // animasi scale saat diklik
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 1.05f else 1f,
+        animationSpec = tween(durationMillis = 150),
+        label = "scaleAnimation"
+    )
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = tween(500)),
+        exit = fadeOut()
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale
+                )
+                .clickable {
+                    isPressed = true
+                    coroutineScope.launch {
+                        delay(150)
+                        isPressed = false
+                        onClick()
+                    }
+                },
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_folder),
+                    contentDescription = "Folder Icon",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .padding(bottom = 8.dp)
+                )
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
