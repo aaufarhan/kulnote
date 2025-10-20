@@ -57,7 +57,12 @@ fun NoteListScreen(
         containerColor = MaterialTheme.colorScheme.surfaceVariant
     ) { innerPadding ->
         if (notes.isEmpty()) {
-            Box( /* ... */ ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = "Belum ada catatan di folder ${folderTitle}.",
                     fontSize = 16.sp
