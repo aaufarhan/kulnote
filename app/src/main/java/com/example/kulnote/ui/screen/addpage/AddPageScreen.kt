@@ -19,6 +19,8 @@ import androidx.navigation.NavController
 import com.example.kulnote.R
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
+import com.example.kulnote.data.viewmodel.ReminderViewModel
+import com.example.kulnote.ui.screen.reminder.AddReminderForm
 import com.example.kulnote.ui.screen.note.AddNoteForm
 import com.example.kulnote.ui.screen.schedule.AddScheduleForm
 
@@ -26,10 +28,13 @@ import com.example.kulnote.ui.screen.schedule.AddScheduleForm
 fun AddPageScreen(
     navController: NavController,
     viewModel: ScheduleViewModel,
-    noteViewModel: NoteViewModel
+    noteViewModel: NoteViewModel,
+    reminderViewModel: ReminderViewModel
 ) {
     var showScheduleDialog by remember { mutableStateOf(false) }
     var showNoteDialog by remember { mutableStateOf(false) }
+    var showReminderDialog by remember { mutableStateOf(false) }
+
 
 
     Column(
@@ -71,7 +76,7 @@ fun AddPageScreen(
             icon = R.drawable.ic_reminder_active,
             title = "Add Reminder"
         ) {
-            // navController.navigate("add_reminder")
+            showReminderDialog = true
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -96,8 +101,15 @@ fun AddPageScreen(
             )
         }
     }
-
+    // ====== POP-UP ADD REMINDER ======
+    if (showReminderDialog) {
+        AddReminderForm(
+            viewModel = reminderViewModel,
+            onDismiss = { showReminderDialog = false }
+        )
+    }
 }
+
 
 @Composable
 fun AddPageCard(

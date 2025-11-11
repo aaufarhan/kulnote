@@ -18,11 +18,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.kulnote.data.viewmodel.NoteViewModel
+import com.example.kulnote.data.viewmodel.ReminderViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
 import com.example.kulnote.ui.screen.note.NoteListScreen
+import com.example.kulnote.ui.screen.reminder.ReminderListScreen
 import com.example.kulnote.ui.theme.KulnoteTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,6 +49,8 @@ fun KulNoteApp() {
     val navController = rememberNavController()
     val scheduleViewModel: ScheduleViewModel = viewModel()
     val noteViewModel: NoteViewModel = viewModel()
+    val reminderViewModel: ReminderViewModel = viewModel()
+
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -71,7 +75,8 @@ fun KulNoteApp() {
             navController = navController,
             modifier = Modifier.padding(innerPadding),
             scheduleViewModel = scheduleViewModel,
-            noteViewModel = noteViewModel
+            noteViewModel = noteViewModel,
+            reminderViewModel = reminderViewModel
         )
     }
 }
@@ -81,7 +86,8 @@ fun NavigationGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     scheduleViewModel: ScheduleViewModel,
-    noteViewModel: NoteViewModel
+    noteViewModel: NoteViewModel,
+    reminderViewModel: ReminderViewModel
 ) {
     NavHost(
         navController = navController,
@@ -95,8 +101,13 @@ fun NavigationGraph(
 
         // Halaman Add Page
         composable("add_page") {
-            AddPageScreen(navController, scheduleViewModel, noteViewModel)
+            AddPageScreen(navController, scheduleViewModel, noteViewModel, reminderViewModel)
         }
+
+        composable("reminder_list") {
+            ReminderListScreen(navController = navController, reminderViewModel = reminderViewModel)
+        }
+
 
 
         // Halaman Note List (dengan argumen ID matkul)
