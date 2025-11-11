@@ -105,7 +105,8 @@ fun NavigationGraph(
         }
 
         composable("reminder_list") {
-            ReminderListScreen(navController = navController, reminderViewModel = reminderViewModel)
+            ReminderListScreen(
+                navController, reminderViewModel)
         }
 
 
