@@ -18,7 +18,7 @@ import androidx.compose.material.icons.outlined.Add
 fun BottomNavBar(navController: NavController) {
     val items = listOf(
         BottomNavItem("Notes", R.drawable.ic_note_inactive, R.drawable.ic_note_active, "note_folders"),
-//        BottomNavItem("Schedule", R.drawable.ic_schedule_inactive, R.drawable.ic_schedule_active, "schedule"),
+        BottomNavItem("Schedule", R.drawable.ic_schedule_inactive, R.drawable.ic_schedule_active, "schedule"),
         BottomNavItem("Reminder", R.drawable.ic_reminder_inactive, R.drawable.ic_reminder_active, "reminder"),
         BottomNavItem("Add", R.drawable.ic_add_inactive, R.drawable.ic_add_inactive, "add_page") // pakai Material Icon bawaan
     )
