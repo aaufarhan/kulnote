@@ -6,30 +6,37 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.fromColorLong
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
 import com.example.kulnote.R
+import com.example.kulnote.data.viewmodel.NoteViewModel
+import com.example.kulnote.data.viewmodel.ScheduleViewModel
+import com.example.kulnote.ui.screen.note.AddNoteForm
+import com.example.kulnote.ui.screen.schedule.AddScheduleForm
 
 @Composable
-fun AddPageScreen(navController: NavController) {
+fun AddPageScreen(
+    navController: NavController,
+    viewModel: ScheduleViewModel,
+    noteViewModel: NoteViewModel
+) {
+    var showScheduleDialog by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp),
-
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -41,12 +48,12 @@ fun AddPageScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        //  Button Add
+        // ===== Tombol Add Schedule =====
         AddPageCard(
             icon = R.drawable.ic_schedule_active,
             title = "Add Schedule"
         ) {
-            navController.navigate("add_schedule")
+            showScheduleDialog = true
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -55,7 +62,7 @@ fun AddPageScreen(navController: NavController) {
             icon = R.drawable.ic_note_active,
             title = "Add Note"
         ) {
-            navController.navigate("add_note")
+            showNoteDialog = true
         }
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -66,8 +73,30 @@ fun AddPageScreen(navController: NavController) {
         ) {
             // navController.navigate("add_reminder")
         }
+
         Spacer(modifier = Modifier.height(20.dp))
     }
+
+    // ====== POP-UP ADD SCHEDULE ======
+    if (showScheduleDialog) {
+        Dialog(onDismissRequest = { showScheduleDialog = false }) {
+            AddScheduleForm(
+                viewModel = viewModel,
+                onDismiss = { showScheduleDialog = false }
+            )
+        }
+    }
+    // ====== POP-UP ADD NOTE ======
+    if (showNoteDialog) {
+        Dialog(onDismissRequest = { showNoteDialog = false }) {
+            AddNoteForm(
+                scheduleViewModel = viewModel,
+                noteViewModel = noteViewModel,
+                onDismiss = { showNoteDialog = false }
+            )
+        }
+    }
+
 }
 
 @Composable

@@ -19,58 +19,49 @@ import com.example.kulnote.data.model.NoteInput
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewNoteScreen(
-    navController: NavController,
-    scheduleViewModel: ScheduleViewModel = viewModel(),
-    noteViewModel: NoteViewModel = viewModel()
+fun AddNoteForm(
+    scheduleViewModel: ScheduleViewModel,
+    noteViewModel: NoteViewModel,
+    onDismiss: () -> Unit
 ) {
-    // Asumsi: ScheduleViewModel memiliki mataKuliahList
     val mataKuliahList by scheduleViewModel.mataKuliahList.collectAsState()
     var input by remember { mutableStateOf(NoteInput()) }
     var isExpanded by remember { mutableStateOf(false) }
 
-    val isButtonEnabled = remember(input) {
-        input.title.isNotBlank() && input.matkulId.isNotBlank()
-    }
+    val isButtonEnabled = input.title.isNotBlank() && input.matkulId.isNotBlank()
 
-    // Hanya tampilkan placeholder jika daftar mata kuliah kosong
-    if (mataKuliahList.isEmpty()) {
-        // Asumsi: NoSchedulePlaceholder adalah Composable Anda
-        NoSchedulePlaceholder(navController)
-        return
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "New Note") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
-        modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant
-    ) { innerPadding ->
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
         Column(
             modifier = Modifier
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "New Note",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
 
+            if (mataKuliahList.isEmpty()) {
+                Text(
+                    text = "Anda harus menambahkan Jadwal terlebih dahulu sebelum membuat catatan.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text("Tutup")
+                }
+            } else {
                 OutlinedTextField(
                     value = input.title,
                     onValueChange = { input = input.copy(title = it) },
@@ -79,16 +70,15 @@ fun NewNoteScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Dropdown Mata Kuliah
                 ExposedDropdownMenuBox(
                     expanded = isExpanded,
                     onExpandedChange = { isExpanded = !isExpanded },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
-                        // Cari nama matkul berdasarkan ID yang disimpan
-                        value = mataKuliahList.find { it.id == input.matkulId }?.namaMatkul ?: "Pilih Mata Kuliah",
-                        onValueChange = { /* Read-only */ },
+                        value = mataKuliahList.find { it.id == input.matkulId }?.namaMatkul
+                            ?: "Pilih Mata Kuliah",
+                        onValueChange = {},
                         label = { Text("Lecture") },
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
@@ -104,7 +94,7 @@ fun NewNoteScreen(
                             DropdownMenuItem(
                                 text = { Text(matkul.namaMatkul) },
                                 onClick = {
-                                    input = input.copy(matkulId = matkul.id) // Simpan ID mata kuliah
+                                    input = input.copy(matkulId = matkul.id)
                                     isExpanded = false
                                 },
                                 contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
@@ -113,21 +103,28 @@ fun NewNoteScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // Tombol Save
-            Button(
-                onClick = {
-                    if (isButtonEnabled) {
-                        noteViewModel.saveNewNote(input)
-                        navController.popBackStack() // Kembali ke layar sebelumnya
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Batal")
                     }
-                },
-                enabled = isButtonEnabled,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-            ) {
-                Text("Save Note")
+
+                    Button(
+                        onClick = {
+                            noteViewModel.saveNewNote(input)
+                            onDismiss()
+                        },
+                        enabled = isButtonEnabled,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Simpan")
+                    }
+                }
             }
         }
     }
