@@ -1,6 +1,7 @@
 package com.example.kulnote.ui.navigation
 
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +25,7 @@ fun BottomNavBar(navController: NavController) {
     )
 
     NavigationBar(
+        modifier = Modifier.height(56.dp),
         tonalElevation = 4.dp,
         containerColor = MaterialTheme.colorScheme.background
     ) {
@@ -34,6 +36,7 @@ fun BottomNavBar(navController: NavController) {
             val selected = currentRoute == item.route
 
             NavigationBarItem(
+                modifier = Modifier.padding(vertical = 4.dp),
                 icon = {
 //                    if (item.name == "Add") {
 //                        Icon(
