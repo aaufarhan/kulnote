@@ -6,7 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +23,35 @@ import com.example.kulnote.data.viewmodel.ScheduleViewModel
 private val daysOfWeek = listOf(
     "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"
 )
+
+private fun calculateEndTime(startTime: String, sks: String): String {
+    // 1. Validasi SKS
+    val sksInt = sks.toIntOrNull()
+    if (sksInt == null || sksInt <= 0) return "" // SKS tidak valid
+
+    // 2. Validasi Jam Mulai (harus 4 digit "HHMM")
+    if (startTime.length != 4) return ""
+    val startHour = startTime.substring(0, 2).toIntOrNull()
+    val startMinute = startTime.substring(2, 4).toIntOrNull()
+
+    if (startHour == null || startMinute == null) return "" // Jam tidak valid
+
+    // 3. Hitung durasi
+    val durationInMinutes = sksInt * 50
+
+    // 4. Hitung total menit
+    val totalStartMinutes = (startHour * 60) + startMinute
+    val totalEndMinutes = totalStartMinutes + durationInMinutes
+    val endHour = (totalEndMinutes / 60) % 24
+    val endMinute = totalEndMinutes % 60
+
+    // 6. Format kembali ke "HHMM"
+    val endHourStr = endHour.toString().padStart(2, '0')
+    val endMinuteStr = endMinute.toString().padStart(2, '0')
+
+    return "$endHourStr$endMinuteStr"
+}
+
 
 class TimeVisualTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
@@ -63,9 +92,21 @@ fun AddScheduleForm(
     var dosenText by remember { mutableStateOf("") }
     var isExpanded by remember { mutableStateOf(false) }
 
+    // Logika Hitung Waktu Otomatis SKS
+    LaunchedEffect(input.jamMulai, sksText) {
+        // Hanya hitung jika kedua field tidak kosong
+        if (input.jamMulai.isNotBlank() && sksText.isNotBlank()) {
+            val endTime = calculateEndTime(input.jamMulai, sksText)
+            if (endTime.isNotBlank()) {
+                // Update state 'input' dengan jam selesai yang baru
+                input = input.copy(jamSelesai = endTime)
+            }
+        }
+    }
+
     Surface(
         shape = RoundedCornerShape(16.dp),
-        tonalElevation = 6.dp,
+        color = MaterialTheme.colorScheme.surface,
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
@@ -76,26 +117,15 @@ fun AddScheduleForm(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- HEADER ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-                Text(
-                    text = "New Schedule",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(48.dp)) // biar rata tengah
-            }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "New Schedule",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
 
             // --- INPUT FIELD ---
             OutlinedTextField(
@@ -149,7 +179,7 @@ fun AddScheduleForm(
                 ExposedDropdownMenu(
                     expanded = isExpanded,
                     onDismissRequest = { isExpanded = false },
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.surface
                 ) {
                     daysOfWeek.forEach { selectionOption ->
                         DropdownMenuItem(
@@ -183,7 +213,7 @@ fun AddScheduleForm(
                 )
 
                 OutlinedTextField(
-                    value = input.jamSelesai,
+                    value = input.jamSelesai, // Field ini sekarang akan ter-update otomatis
                     onValueChange = {
                         val filtered = it.filter { c -> c.isDigit() }.take(4)
                         input = input.copy(jamSelesai = filtered)
@@ -204,20 +234,33 @@ fun AddScheduleForm(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Tombol Simpan
-            Button(
-                onClick = {
-                    if (isButtonEnabled) {
-                        viewModel.saveNewSchedule(input)
-                        onDismiss()
-                    }
-                },
-                enabled = isButtonEnabled,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Save Schedule")
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text("Cancel")
+                }
+
+                Button(
+                    onClick = {
+                        if (isButtonEnabled) {
+                            viewModel.saveNewSchedule(input)
+                            onDismiss()
+                        }
+                    },
+                    enabled = isButtonEnabled,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp)
+                ) {
+                    Text("Save")
+                }
             }
         }
     }

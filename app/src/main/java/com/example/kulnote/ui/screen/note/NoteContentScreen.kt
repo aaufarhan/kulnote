@@ -23,13 +23,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.kulnote.R
 import com.example.kulnote.data.model.NoteContentItem
 import com.example.kulnote.data.viewmodel.NoteViewModel
+import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,30 +40,31 @@ import kotlinx.coroutines.launch
 fun NoteContentScreen(
     navController: NavController,
     noteId: String,
-    noteViewModel: NoteViewModel
+    noteViewModel: NoteViewModel,
+    scheduleViewModel: ScheduleViewModel = viewModel()
 ) {
-    // 1. Dapatkan note dari ViewModel
     val note = remember(noteId) { noteViewModel.getNoteById(noteId) }
-
-    // 2. Siapkan state untuk UI yang bisa berubah
     var noteTitle by remember { mutableStateOf(note?.title ?: "Judul") }
-    // Gunakan mutableStateListOf agar LazyColumn bereaksi thd penambahan/penghapusan
     val noteContent = remember {
         mutableStateListOf<NoteContentItem>().apply {
             addAll(note?.content ?: listOf(NoteContentItem.Text("")))
         }
     }
 
-    // 3. State untuk Bottom Sheet (UI-2)
+    // MODIFIKASI 1 (Lanjutan): Logika untuk mengambil nama folder/matkul
+    val mataKuliahList by scheduleViewModel.mataKuliahList.collectAsState()
+    val folderName = remember(note, mataKuliahList) {
+        mataKuliahList.find { it.id == note?.matkulId }?.namaMatkul ?: "Note"
+    }
+
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // 4. State untuk melacak kursor (kunci untuk "seperti Word")
     var lastFocusedTextFieldIndex by remember { mutableStateOf(0) }
     var lastTextFieldCursorPosition by remember { mutableStateOf(TextRange.Zero) }
 
-    // 5. Logika Simpan Otomatis saat tombol Back ditekan
+    //Logika Simpan Otomatis saat tombol Back ditekan
     fun saveChanges() {
         noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
         navController.popBackStack()
@@ -72,21 +76,31 @@ fun NoteContentScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = { /* Kosong, sesuai UI */ },
+                title = { Text(folderName) },
                 navigationIcon = {
-                    // Tombol back di TopBar juga menyimpan
+                    // Button Back
                     IconButton(onClick = { saveChanges() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    // Pastikan warna title di TopAppBar juga mengikuti tema
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         },
         floatingActionButton = {
-            // Tombol Tambah (UI-1 & UI-2)
-            FloatingActionButton(onClick = { showBottomSheet = true }) {
+            // Button Add
+            FloatingActionButton(
+                onClick = { showBottomSheet = true },
+                // MODIFIKASI 4: Atur warna FAB agar mengikuti tema (seperti LoginScreen)
+                containerColor = MaterialTheme.colorScheme.onSurface,
+                contentColor = MaterialTheme.colorScheme.surface
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
         }
@@ -103,7 +117,11 @@ fun NoteContentScreen(
                     value = noteTitle,
                     onValueChange = { noteTitle = it },
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp),
+                    textStyle = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 24.sp,
+                        // MODIFIKASI 2: Jadikan judul Bold
+                        fontWeight = FontWeight.Bold
+                    ),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -111,14 +129,17 @@ fun NoteContentScreen(
                         unfocusedIndicatorColor = Color.Transparent
                     ),
                     placeholder = {
-                        Text("Judul Catatan", style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp))
+                        Text(
+                            "Judul Catatan",
+                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        )
                     },
                     maxLines = 1
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                // MODIFIKASI 3: Ganti Spacer dengan Divider
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
-            // Item untuk Konten (UI-1, UI-3)
             itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
                 when (item) {
                     is NoteContentItem.Text -> {
@@ -168,7 +189,6 @@ fun NoteContentScreen(
         }
     }
 
-    // Bottom Sheet (UI-2)
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -179,38 +199,19 @@ fun NoteContentScreen(
                     icon = Icons.Default.PhotoCamera,
                     text = "Add Photo"
                 ) {
-                    // Aksi (sesuai permintaan, tidak melakukan apa-apa selain simulasi)
-                    insertContentItem(
-                        contentList = noteContent,
-                        newItem = NoteContentItem.Image(R.drawable.ic_note_active), // Placeholder
-                        index = lastFocusedTextFieldIndex,
-                        cursorPosition = lastTextFieldCursorPosition
-                    )
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { showBottomSheet = false }
+
                 }
                 BottomSheetOption(
                     icon = Icons.Default.Image,
                     text = "Add Image"
                 ) {
-                    insertContentItem(
-                        contentList = noteContent,
-                        newItem = NoteContentItem.Image(R.drawable.ic_folder), // Placeholder
-                        index = lastFocusedTextFieldIndex,
-                        cursorPosition = lastTextFieldCursorPosition
-                    )
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { showBottomSheet = false }
+
                 }
                 BottomSheetOption(
                     icon = Icons.Default.AttachFile,
                     text = "Add File"
                 ) {
-                    insertContentItem(
-                        contentList = noteContent,
-                        newItem = NoteContentItem.File("dokumen_penting.pdf"), // Placeholder
-                        index = lastFocusedTextFieldIndex,
-                        cursorPosition = lastTextFieldCursorPosition
-                    )
-                    scope.launch { sheetState.hide() }.invokeOnCompletion { showBottomSheet = false }
+
                 }
                 Spacer(modifier = Modifier.height(20.dp))
             }
@@ -218,9 +219,6 @@ fun NoteContentScreen(
     }
 }
 
-/**
- * Composable untuk menampilkan item file (UI-3)
- */
 @Composable
 fun FileAttachmentItem(fileName: String) {
     Row(
@@ -246,9 +244,6 @@ fun FileAttachmentItem(fileName: String) {
     }
 }
 
-/**
- * Composable untuk opsi di bottom sheet (UI-2)
- */
 @Composable
 fun BottomSheetOption(icon: ImageVector, text: String, onClick: () -> Unit) {
     Row(
@@ -264,10 +259,7 @@ fun BottomSheetOption(icon: ImageVector, text: String, onClick: () -> Unit) {
     }
 }
 
-/**
- * Logika inti "seperti Word" untuk menyisipkan item baru.
- * Fungsi ini memecah TextField jika item baru disisipkan di tengah.
- */
+
 fun insertContentItem(
     contentList: SnapshotStateList<NoteContentItem>,
     newItem: NoteContentItem,
@@ -288,8 +280,6 @@ fun insertContentItem(
         val currentText = currentItem.text
         val textBefore = currentText.substring(0, cursorPosition.start)
         val textAfter = currentText.substring(cursorPosition.start)
-
-        // 1. Ubah item teks saat ini menjadi teks "before"
         contentList[index] = NoteContentItem.Text(textBefore)
 
         // 2. Tambahkan item baru (gambar/file)
@@ -303,7 +293,6 @@ fun insertContentItem(
 
     } else {
         // Jika item yang difokuskan bukan teks (misal, gambar),
-        // tambahkan item baru setelahnya, diikuti field teks baru
         contentList.add(index + 1, newItem)
         if (newItem !is NoteContentItem.Text) {
             contentList.add(index + 2, NoteContentItem.Text(""))

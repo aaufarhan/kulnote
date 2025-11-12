@@ -2,8 +2,6 @@ package com.example.kulnote.ui.screen.reminder
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import com.example.kulnote.data.viewmodel.ReminderViewModel
 import com.example.kulnote.data.model.ReminderInput
 
-// ✅ Tambahan aman: Format otomatis untuk jam (08:30)
 class TimeVisualTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val trimmed = if (text.text.length >= 4) text.text.substring(0..3) else text.text
@@ -59,6 +56,10 @@ fun AddReminderForm(
     var time by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
 
+    val isButtonEnabled = remember(subject, date, time) {
+        subject.isNotBlank() && date.isNotBlank() && time.isNotBlank()
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -98,7 +99,6 @@ fun AddReminderForm(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ✅ Revisi: field time pakai TimeVisualTransformation
             OutlinedTextField(
                 value = time,
                 onValueChange = { newValue ->
@@ -120,19 +120,28 @@ fun AddReminderForm(
                 maxLines = 3
             )
 
-            // Tombol Add File (nonaktif)
-            Button(
-                onClick = { /* Belum aktif */ },
+            OutlinedTextField(
+                value = "No File Chosen",
+                onValueChange = { /* Tidak ada aksi */ },
+                label = { Text("Add File") },
+                readOnly = true, // Tidak bisa diketik
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
-            ) {
-                Text(
-                    "Choose File (Disabled)",
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+                leadingIcon = {
+
+                    Button(
+                        onClick = { /* Belum aktif */ },
+                        modifier = Modifier.padding(start = 8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Text(
+                            "Choose Files",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -150,9 +159,8 @@ fun AddReminderForm(
                 }
 
                 Button(
-                    // ✅ Revisi aman: data tersimpan ke ViewModel sebelum tutup
                     onClick = {
-                        if (subject.isNotBlank() && date.isNotBlank() && time.isNotBlank()) {
+                        if (isButtonEnabled) {
                             viewModel.saveNewReminder(
                                 ReminderInput(
                                     subject = subject,
@@ -161,17 +169,15 @@ fun AddReminderForm(
                                     description = description
                                 )
                             )
+                            onDismiss()
                         }
-                        onDismiss()
                     },
+                    enabled = isButtonEnabled,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save"
-                    )
+                    Text("Save")
                 }
             }
         }

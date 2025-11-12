@@ -136,44 +136,30 @@ fun AddNoteForm(
     }
 }
 
-// Composable untuk menampilkan pesan jika belum ada jadwal
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NoSchedulePlaceholder(navController: NavController) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("New Note") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.surfaceVariant
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(32.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "Anda harus menambahkan Jadwal (Mata Kuliah) terlebih dahulu sebelum membuat catatan baru.",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(onClick = { navController.navigate("add_schedule") }) {
-                    Text("Tambah Jadwal Sekarang")
-                }
-            }
-        }
-    }
-}
+
+//@Composable
+//fun NoSchedulePlaceholderContent(
+//    navController: NavController,
+//    onDismiss: () -> Unit
+//) {
+//    Column(
+//        horizontalAlignment = Alignment.CenterHorizontally,
+//        modifier = Modifier.padding(16.dp)
+//    ) {
+//        Text(
+//            text = "Anda harus menambahkan Jadwal terlebih dahulu sebelum membuat catatan baru.",
+//            style = MaterialTheme.typography.titleMedium,
+//            color = MaterialTheme.colorScheme.onSurfaceVariant
+//        )
+//        Spacer(modifier = Modifier.height(24.dp))
+//        Button(
+//            onClick = {
+//                onDismiss() // Tutup dialog
+//                navController.navigate("add_schedule") // Arahkan ke tambah jadwal
+//            },
+//            modifier = Modifier.fillMaxWidth()
+//        ) {
+//            Text("Tambah Jadwal Sekarang")
+//        }
+//    }
+//}
