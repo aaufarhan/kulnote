@@ -86,7 +86,7 @@ fun AddReminderForm(
             OutlinedTextField(
                 value = subject,
                 onValueChange = { subject = it },
-                label = { Text("Subject") },
+                label = { Text("Subject*") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -94,7 +94,7 @@ fun AddReminderForm(
             OutlinedTextField(
                 value = date,
                 onValueChange = { date = it },
-                label = { Text("Date (e.g. 26 Sept 2025)") },
+                label = { Text("Date*") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -105,7 +105,7 @@ fun AddReminderForm(
                     val filtered = newValue.filter { it.isDigit() }.take(4)
                     time = filtered
                 },
-                label = { Text("Time (e.g. 08:30)") },
+                label = { Text("Time*") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 visualTransformation = TimeVisualTransformation(),
