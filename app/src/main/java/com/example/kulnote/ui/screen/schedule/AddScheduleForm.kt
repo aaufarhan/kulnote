@@ -21,7 +21,7 @@ import com.example.kulnote.data.model.ScheduleInput
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 
 private val daysOfWeek = listOf(
-    "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
 )
 
 private fun calculateEndTime(startTime: String, sks: String): String {

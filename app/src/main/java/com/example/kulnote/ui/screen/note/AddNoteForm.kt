@@ -78,7 +78,7 @@ fun AddNoteForm(
                 ) {
                     OutlinedTextField(
                         value = mataKuliahList.find { it.id == input.matkulId }?.namaMatkul
-                            ?: "Pilih Mata Kuliah",
+                            ?: "Course",
                         onValueChange = {},
                         label = { Text("Lecture") },
                         readOnly = true,
@@ -112,7 +112,7 @@ fun AddNoteForm(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Batal")
+                        Text("Cancel")
                     }
 
                     Button(
@@ -128,7 +128,7 @@ fun AddNoteForm(
                         enabled = isButtonEnabled,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Simpan")
+                        Text("Save")
                     }
                 }
             }

@@ -34,16 +34,16 @@ fun ReminderListScreen(
     var selectedReminder by remember { mutableStateOf<Reminder?>(null) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Reminders", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
+//        topBar = {
+//            TopAppBar(
+//                title = { Text("Reminders", fontWeight = FontWeight.Bold) },
+//                navigationIcon = {
+//                    IconButton(onClick = { navController.popBackStack() }) {
+//                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+//                    }
+//                }
+//            )
+//        },
         containerColor = MaterialTheme.colorScheme.surfaceVariant
     ) { innerPadding ->
         if (reminders.isEmpty()) {
@@ -54,7 +54,7 @@ fun ReminderListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Belum ada pengingat.",
+                    text = "Reminder is Empty. Add a Reminder",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
                 )
