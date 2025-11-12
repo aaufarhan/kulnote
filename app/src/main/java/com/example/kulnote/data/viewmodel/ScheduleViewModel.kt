@@ -17,17 +17,21 @@ class ScheduleViewModel : ViewModel() {
 
     // FUNGSI: Logika untuk menyimpan data input ke memori
     fun saveNewSchedule(input: ScheduleInput) {
-        if (input.namaMatkul.isBlank()) return // Hindari menyimpan data kosong
+        if (input.namaMatkul.isBlank() || input.hari.isBlank()) return // Hindari menyimpan data kosong
 
         // 1. Buat ID unik sederhana
-        val matkulId = input.namaMatkul.filter { it.isLetterOrDigit() }.lowercase()
+        val matkulId = input.namaMatkul.filter { it.isLetterOrDigit() }.lowercase() + input.hari
 
         // 2. Buat objek MataKuliah baru
         val newMatkul = MataKuliah(
             id = matkulId,
             namaMatkul = input.namaMatkul,
             sks = input.sks.toIntOrNull() ?: 0,
-            dosen = input.dosen
+            dosen = input.dosen,
+            hari = input.hari,
+            jamMulai = input.jamMulai,
+            jamSelesai = input.jamSelesai,
+            ruangan = input.ruangan
         )
 
         // 3. Simpan ke dalam list (In-Memory)

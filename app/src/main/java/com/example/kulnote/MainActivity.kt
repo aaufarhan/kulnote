@@ -24,12 +24,13 @@ import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ReminderViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
-import com.example.kulnote.ui.screen.addpage.AddPageScreen
 import com.example.kulnote.ui.screen.auth.LoginScreen
+import com.example.kulnote.ui.screen.addpage.AddPageScreen
 import com.example.kulnote.ui.screen.note.NoteContentScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
 import com.example.kulnote.ui.screen.note.NoteListScreen
 import com.example.kulnote.ui.screen.reminder.ReminderListScreen
+import com.example.kulnote.ui.screen.schedule.ScheduleListScreen
 import com.example.kulnote.ui.theme.KulnoteTheme
 
 class MainActivity : ComponentActivity() {
@@ -118,9 +119,14 @@ fun NavigationGraph(
             NoteFolderListScreen(navController, scheduleViewModel, modifier)
         }
 
-        // Halaman Add Page
+        // Halaman Add
         composable("add_page") {
             AddPageScreen(navController, scheduleViewModel, noteViewModel, reminderViewModel)
+        }
+
+        //Halaman Schedule
+        composable("schedule") {
+            ScheduleListScreen(navController, scheduleViewModel)
         }
 
         // Halaman Reminder

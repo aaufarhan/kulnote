@@ -54,7 +54,7 @@ fun ReminderListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Reminder is Empty. Add a Reminder",
+                    text = "No Reminder added yet",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
                 )

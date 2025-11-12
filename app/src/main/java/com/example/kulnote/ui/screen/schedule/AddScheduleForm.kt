@@ -87,7 +87,7 @@ fun AddScheduleForm(
     viewModel: ScheduleViewModel
 ) {
     var input by remember { mutableStateOf(ScheduleInput()) }
-    val isButtonEnabled = remember(input) { input.namaMatkul.isNotBlank() }
+    val isButtonEnabled = remember(input) { input.namaMatkul.isNotBlank() && input.hari.isNotBlank() && input.jamMulai.isNotBlank() && input.jamSelesai.isNotBlank() && input.sks.isNotBlank() }
     var sksText by remember { mutableStateOf("") }
     var dosenText by remember { mutableStateOf("") }
     var isExpanded by remember { mutableStateOf(false) }
@@ -151,7 +151,7 @@ fun AddScheduleForm(
                     sksText = filteredValue
                     input = input.copy(sks = filteredValue)
                 },
-                label = { Text("SKS") },
+                label = { Text("SKS*") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -166,7 +166,7 @@ fun AddScheduleForm(
                 OutlinedTextField(
                     value = input.hari,
                     onValueChange = {},
-                    label = { Text("Day") },
+                    label = { Text("Day*") },
                     readOnly = true,
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded)
@@ -205,7 +205,7 @@ fun AddScheduleForm(
                         val filtered = it.filter { c -> c.isDigit() }.take(4)
                         input = input.copy(jamMulai = filtered)
                     },
-                    label = { Text("Start Time") },
+                    label = { Text("Start Time*") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -218,7 +218,7 @@ fun AddScheduleForm(
                         val filtered = it.filter { c -> c.isDigit() }.take(4)
                         input = input.copy(jamSelesai = filtered)
                     },
-                    label = { Text("End Time") },
+                    label = { Text("End Time*") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
