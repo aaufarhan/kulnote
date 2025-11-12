@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -22,6 +25,7 @@ import com.example.kulnote.data.viewmodel.ReminderViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
+import com.example.kulnote.ui.screen.auth.LoginScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
 import com.example.kulnote.ui.screen.note.NoteListScreen
 import com.example.kulnote.ui.screen.reminder.ReminderListScreen
@@ -51,25 +55,33 @@ fun KulNoteApp() {
     val noteViewModel: NoteViewModel = viewModel()
     val reminderViewModel: ReminderViewModel = viewModel()
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val showBottomBar = currentRoute !in listOf("login")
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "kulnote.",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
+            if (currentRoute != "login") {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = "kulnote.",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
-            )
+            }
         },
-        bottomBar = { BottomNavBar(navController) }
+        bottomBar = {
+            if (showBottomBar) BottomNavBar(navController)
+        }
     ) { innerPadding ->
         NavigationGraph(
             navController = navController,
@@ -91,9 +103,15 @@ fun NavigationGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = "note_folders",
+        startDestination = "login",
         modifier = modifier
     ) {
+
+        // Halaman Login
+        composable("login") {
+            LoginScreen(navController)
+        }
+
         // Halaman Default (Folder List)
         composable("note_folders") {
             NoteFolderListScreen(navController, scheduleViewModel, modifier)
@@ -104,12 +122,11 @@ fun NavigationGraph(
             AddPageScreen(navController, scheduleViewModel, noteViewModel, reminderViewModel)
         }
 
+        // Halaman Reminder
         composable("reminder_list") {
             ReminderListScreen(
                 navController, reminderViewModel)
         }
-
-
 
         // Halaman Note List (dengan argumen ID matkul)
         composable(
