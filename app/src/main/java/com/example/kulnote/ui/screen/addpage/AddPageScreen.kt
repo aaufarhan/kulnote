@@ -95,6 +95,7 @@ fun AddPageScreen(
     if (showNoteDialog) {
         Dialog(onDismissRequest = { showNoteDialog = false }) {
             AddNoteForm(
+                navController = navController,
                 scheduleViewModel = viewModel,
                 noteViewModel = noteViewModel,
                 onDismiss = { showNoteDialog = false }

@@ -26,6 +26,7 @@ import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
 import com.example.kulnote.ui.screen.auth.LoginScreen
+import com.example.kulnote.ui.screen.note.NoteContentScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
 import com.example.kulnote.ui.screen.note.NoteListScreen
 import com.example.kulnote.ui.screen.reminder.ReminderListScreen
@@ -63,7 +64,7 @@ fun KulNoteApp() {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            if (currentRoute != "login") {
+            if (currentRoute != "login" && currentRoute != "note_content_screen/{noteId}") {
                 TopAppBar(
                     title = {
                         Text(
@@ -146,6 +147,27 @@ fun NavigationGraph(
                 scheduleViewModel = scheduleViewModel,
                 noteViewModel = noteViewModel
             )
+        }
+        composable(
+            route = "note_content_screen/{noteId}", // Rute baru dengan argumen noteId
+            arguments = listOf(
+                navArgument("noteId") { type = NavType.StringType } // Definisikan tipe argumen
+            )
+        ) { backStackEntry ->
+            // Ambil noteId dari argumen navigasi
+            val noteId = backStackEntry.arguments?.getString("noteId")
+
+            if (noteId != null) {
+                // Tampilkan NoteContentScreen jika noteId ada
+                NoteContentScreen(
+                    navController = navController,
+                    noteId = noteId,
+                    noteViewModel = noteViewModel
+                )
+            } else {
+                // Jika karena alasan tertentu noteId null, kembali ke layar sebelumnya
+                navController.popBackStack()
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ package com.example.kulnote.data.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.kulnote.data.model.Note
 import com.example.kulnote.data.model.NoteInput
+import com.example.kulnote.data.model.NoteContentItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,13 +19,15 @@ class NoteViewModel : ViewModel() {
     val noteList: StateFlow<List<Note>> = _noteList.asStateFlow()
 
     // FUNGSI: Logika untuk menyimpan data input catatan baru
-    fun saveNewNote(input: NoteInput) {
-        if (input.title.isBlank() || input.matkulId.isBlank()) return
+    fun saveNewNote(input: NoteInput): String? {
+        if (input.title.isBlank() || input.matkulId.isBlank()) return null
+
+        val newNoteId = UUID.randomUUID().toString()
 
         val newNote = Note(
-            id = UUID.randomUUID().toString(),
+            id = newNoteId,
             title = input.title,
-            content = input.content,
+            content = mutableListOf(NoteContentItem.Text("")),
             matkulId = input.matkulId // Gunakan ID dari input
         )
 
@@ -32,7 +35,27 @@ class NoteViewModel : ViewModel() {
             // KRUSIAL: Mengembalikan List baru dengan item yang ditambahkan
             currentList + newNote
         }
+
+        return newNoteId
+
+    }
+
+    fun getNoteById(id: String): Note? {
+        return _noteList.value.find { it.id == id }
+
+    }
+    fun updateNoteContent(noteId: String, newTitle: String, newContent: List<NoteContentItem>) {
+        _noteList.update { currentList ->
+            currentList.map { note ->
+                if (note.id == noteId) {
+                    note.copy(title = newTitle, content = newContent)
+                } else {
+                    note
+                }
+            }
+        }
     }
 }
+
 
 // Model Input untuk form New Note

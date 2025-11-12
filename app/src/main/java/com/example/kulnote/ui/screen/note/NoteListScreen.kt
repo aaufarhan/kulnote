@@ -75,7 +75,10 @@ fun NoteListScreen(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 items(notes, key = { it.id }) { note ->
-                    NoteItem(title = note.title, onClick = {
+                    NoteItem(
+                        title = note.title,
+                        onClick = {
+                            navController.navigate("note_content_screen/${note.id}")
 
                     })
                 }

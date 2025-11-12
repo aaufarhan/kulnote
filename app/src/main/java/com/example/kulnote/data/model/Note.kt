@@ -1,9 +1,12 @@
 package com.example.kulnote.data.model
 
+import java.util.UUID
+
 data class Note(
-    val id: String,
+    val id: String = UUID.randomUUID().toString(),
+    val matkulId: String,
     val title: String,
-    val content: String,
-    val matkulId: String // KRUSIAL: ID mata kuliah
+    var content: List<NoteContentItem>,
+    var timestamp: Long = System.currentTimeMillis()
 )
 

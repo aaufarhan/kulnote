@@ -20,6 +20,7 @@ import com.example.kulnote.data.model.NoteInput
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddNoteForm(
+    navController: NavController,
     scheduleViewModel: ScheduleViewModel,
     noteViewModel: NoteViewModel,
     onDismiss: () -> Unit
@@ -116,8 +117,13 @@ fun AddNoteForm(
 
                     Button(
                         onClick = {
-                            noteViewModel.saveNewNote(input)
-                            onDismiss()
+                            val newNoteId = noteViewModel.saveNewNote(input)
+                            onDismiss() // Tutup dialog
+
+                            if (newNoteId != null) {
+                                // Navigasi ke editor setelah dialog ditutup
+                                navController.navigate("note_content_screen/$newNoteId")
+                            }
                         },
                         enabled = isButtonEnabled,
                         modifier = Modifier.weight(1f)
