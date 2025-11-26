@@ -96,7 +96,7 @@ fun ScheduleListScreen(
 fun ScheduleItemCard(schedule: MataKuliah) {
     // Format string waktu dan ruangan
     val timeString = "${formatTime(schedule.jamMulai)} - ${formatTime(schedule.jamSelesai)} WIB"
-    val detailString = if (schedule.ruangan.isNotBlank()) {
+    val detailString = if (schedule.ruangan.isNullOrBlank()) {
         "$timeString, ${schedule.ruangan}"
     } else {
         timeString

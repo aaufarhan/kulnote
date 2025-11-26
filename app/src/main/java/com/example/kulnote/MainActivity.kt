@@ -26,6 +26,7 @@ import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.auth.LoginScreen
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
+import com.example.kulnote.ui.screen.auth.RegisterScreen
 import com.example.kulnote.ui.screen.note.NoteContentScreen
 import com.example.kulnote.ui.screen.note.NoteFolderListScreen
 import com.example.kulnote.ui.screen.note.NoteListScreen
@@ -60,12 +61,12 @@ fun KulNoteApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBottomBar = currentRoute !in listOf("login")
+    val showBottomBar = currentRoute !in listOf("login") && currentRoute !in listOf("register")
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            if (currentRoute != "login" && currentRoute != "note_content_screen/{noteId}") {
+            if (currentRoute != "login" && currentRoute != "note_content_screen/{noteId}" && currentRoute != "register") {
                 TopAppBar(
                     title = {
                         Text(
@@ -112,6 +113,10 @@ fun NavigationGraph(
         // Halaman Login
         composable("login") {
             LoginScreen(navController)
+        }
+
+        composable("register") {
+            RegisterScreen(navController)
         }
 
         // Halaman Default (Folder List)
