@@ -25,8 +25,13 @@ interface ApiService {
     // 2. ENDPOINT CRUD JADWAL KELAS
 
     // Mengambil semua jadwal untuk user yang terautentikasi
+    // OPTION 1: Jika server return plain array (RECOMMENDED)
     @GET("schedules")
     fun getSchedules(): Call<List<ScheduleApiModel>>
+
+    // OPTION 2: Jika server return wrapped object (Uncomment jika perlu)
+    // @GET("schedules")
+    // fun getSchedules(): Call<ScheduleListResponse>
 
     // Mengirim jadwal baru ke server
     @POST("schedules")

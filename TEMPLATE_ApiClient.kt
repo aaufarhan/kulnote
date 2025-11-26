@@ -1,4 +1,10 @@
-// FILE: ApiClient.kt
+// ============================================
+// TEMPLATE KONFIGURASI ApiClient.kt
+// ============================================
+// Copy salah satu konfigurasi di bawah ini ke file:
+// app/src/main/java/com/example/kulnote/data/network/ApiClient.kt
+// Ganti nilai BASE_URL sesuai kebutuhan Anda
+// ============================================
 
 package com.example.kulnote.data.network
 
@@ -11,25 +17,25 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
 
     // ========================================
-    // 🎯 KONFIGURASI BASE URL - PILIH SALAH SATU:
+    // 🎯 PILIH SALAH SATU KONFIGURASI DI BAWAH
     // ========================================
 
-    // ✅ OPTION 1: UNTUK EMULATOR ANDROID STUDIO (Default - Paling Mudah)
+    // ✅ OPTION 1: UNTUK EMULATOR ANDROID STUDIO (Paling Mudah)
     // 10.0.2.2 adalah IP khusus emulator yang mengarah ke localhost PC
-    // Jalankan server: php artisan serve
-    // const val BASE_URL = "http://10.0.2.2:8000/api/"
+    const val BASE_URL = "http://10.0.2.2:8000/api/"
 
-    // ✅ OPTION 2: UNTUK HP FISIK (Uncomment & ganti IP sesuai milik Anda!)
-    // Cari IP dengan: ipconfig di CMD (cari "IPv4 Address")
-    // Jalankan server: php artisan serve --host=0.0.0.0 --port=8000
-    // PASTIKAN HP & PC WIFI SAMA!
-    const val BASE_URL = "http://192.168.100.20:8000/api/"
+    // ✅ OPTION 2: UNTUK HP FISIK (Ganti IP dengan milik Anda!)
+    // Cari IP dengan: ipconfig di CMD
+    // const val BASE_URL = "http://192.168.1.11:8000/api/"
 
     // ✅ OPTION 3: UNTUK EMULATOR GENYMOTION
     // const val BASE_URL = "http://10.0.3.2:8000/api/"
 
     // ✅ OPTION 4: UNTUK SERVER ONLINE (Production)
     // const val BASE_URL = "https://api.kulnote.com/api/"
+
+    // ✅ OPTION 5: UNTUK LARAGON/XAMPP dengan Virtual Host
+    // const val BASE_URL = "http://kulnote-api.test/api/"
 
     // ========================================
 
@@ -48,7 +54,7 @@ object ApiClient {
             val requestBuilder = original.newBuilder().apply {
                 // Wajib ada untuk Laravel API agar tidak redirect ke login page HTML saat error auth
                 header("Accept", "application/json")
-                
+
                 if (authToken != null) {
                     header("Authorization", "Bearer $authToken")
                 }
@@ -68,3 +74,4 @@ object ApiClient {
     // Service yang akan dipanggil di Repository/ViewModel
     val apiService: ApiService = retrofit.create(ApiService::class.java)
 }
+

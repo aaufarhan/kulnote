@@ -1,4 +1,6 @@
-// FILE: ScheduleRepository.kt
+// FILE: ScheduleRepository.kt (BACKUP - Untuk handle wrapped response)
+// GUNAKAN FILE INI JIKA Laravel server mengirim wrapped object seperti:
+// { "status": "success", "data": [...] }
 
 package com.example.kulnote.data.repository
 
@@ -7,6 +9,7 @@ import com.example.kulnote.data.network.ApiService
 import com.example.kulnote.data.model.network.ScheduleRequest
 import com.example.kulnote.data.local.model.ScheduleEntity
 import com.example.kulnote.data.model.network.ScheduleApiModel
+import com.example.kulnote.data.model.network.ScheduleListResponse
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,18 +26,23 @@ class ScheduleRepository(
     }
 
     // 2. REFRESH: Ambil data dari Network dan simpan ke Room
+    // VERSI UNTUK WRAPPED RESPONSE
     suspend fun refreshSchedules() {
         withContext(Dispatchers.IO) {
             try {
                 android.util.Log.d("ScheduleRepository", "📡 GET /api/schedules...")
 
-                // Panggil API (membutuhkan token yang disiapkan di ApiClient)
-                val response = apiService.getSchedules().awaitResponse()
+                // UBAH: Panggil getSchedulesWrapped() untuk wrapped response
+                val response = apiService.getSchedulesWrapped().awaitResponse()
 
                 android.util.Log.d("ScheduleRepository", "📥 Response Code: ${response.code()}")
 
                 if (response.isSuccessful) {
-                    val apiData = response.body() ?: emptyList()
+                    val responseBody = response.body()
+
+                    // UBAH: Ekstrak data dari wrapper
+                    val apiData = responseBody?.data ?: emptyList()
+
                     android.util.Log.d("ScheduleRepository", "📊 Data diterima: ${apiData.size} jadwal")
 
                     // Konversi ApiModel ke Entity Room
@@ -44,13 +52,11 @@ class ScheduleRepository(
                     scheduleDao.insertAll(entities)
                     android.util.Log.d("ScheduleRepository", "💾 Disimpan ke Room: ${entities.size} jadwal")
                 } else {
-                    // Handle network error/unauthorized (misal: log error)
                     val errorBody = response.errorBody()?.string()
                     android.util.Log.e("ScheduleRepository", "❌ API Error ${response.code()}: $errorBody")
                     throw Exception("API Error: ${response.code()} - $errorBody")
                 }
             } catch (e: Exception) {
-                // Handle koneksi error
                 android.util.Log.e("ScheduleRepository", "❌ Network Failure: ${e.message}", e)
                 throw Exception("Network Failure: ${e.message}")
             }
@@ -97,3 +103,26 @@ fun ScheduleApiModel.toEntity(): ScheduleEntity {
         ruangan = this.ruangan
     )
 }
+
+/*
+CARA PAKAI FILE INI:
+
+1. Backup ScheduleRepository.kt yang lama
+2. Replace dengan file ini
+3. Update ApiService.kt:
+   - Comment: fun getSchedules(): Call<List<ScheduleApiModel>>
+   - Uncomment: fun getSchedulesWrapped(): Call<ScheduleListResponse>
+
+   ATAU tambahkan method baru:
+
+   @GET("schedules")
+   fun getSchedulesWrapped(): Call<ScheduleListResponse>
+
+4. Rebuild project
+5. Run app
+
+CATATAN:
+- Gunakan ini HANYA jika Laravel tidak bisa diubah
+- Solusi terbaik tetap fix Laravel Controller
+*/
+

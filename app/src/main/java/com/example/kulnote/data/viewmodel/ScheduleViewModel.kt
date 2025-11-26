@@ -53,10 +53,11 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     fun refreshDataFromNetwork() {
         viewModelScope.launch {
             try {
+                android.util.Log.d("ScheduleViewModel", "🔄 Refreshing schedules from network...")
                 repository.refreshSchedules()
-                // Nanti: Tambahkan notifikasi sukses/error ke UI
+                android.util.Log.d("ScheduleViewModel", "✅ Refresh berhasil!")
             } catch (e: Exception) {
-                // Handle error (misal: koneksi gagal)
+                android.util.Log.e("ScheduleViewModel", "❌ Refresh gagal: ${e.message}", e)
                 // Nanti: Tampilkan Toast/Snackbar error di UI
             }
         }
@@ -67,6 +68,8 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     fun saveNewSchedule(input: ScheduleInput) {
         viewModelScope.launch {
             try {
+                android.util.Log.d("ScheduleViewModel", "💾 Menyimpan jadwal baru: ${input.namaMatkul}")
+
                 // 1. Konversi ScheduleInput ke ScheduleRequest untuk Network
                 val request = ScheduleRequest(
                     namaMatakuliah = input.namaMatkul,
@@ -77,11 +80,16 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                     jamSelesai = input.jamSelesai.take(4).chunked(2).joinToString(":") + ":00",
                     ruangan = input.ruangan
                 )
+
+                android.util.Log.d("ScheduleViewModel", "📤 Request: $request")
+
                 // 2. Kirim ke Repository (yang akan mengirim ke Server & Refresh Room)
                 repository.createSchedule(request)
 
+                android.util.Log.d("ScheduleViewModel", "✅ Jadwal berhasil disimpan!")
+
             } catch (e: Exception) {
-                // Handle error
+                android.util.Log.e("ScheduleViewModel", "❌ Gagal menyimpan jadwal: ${e.message}", e)
             }
         }
     }

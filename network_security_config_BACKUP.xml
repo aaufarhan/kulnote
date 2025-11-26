@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FILE INI HANYA DIPERLUKAN JIKA ADA ERROR:
+    "Cleartext HTTP traffic to [IP] not permitted"
+
+    Jika tidak ada error, file ini tidak perlu digunakan.
+
+    CARA MENGGUNAKAN:
+    1. Copy file ini ke: app/src/main/res/xml/
+    2. Tambahkan di AndroidManifest.xml:
+       android:networkSecurityConfig="@xml/network_security_config"
+-->
+<network-security-config>
+    <!-- Izinkan semua HTTP traffic (DEVELOPMENT ONLY!) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Untuk Production: Gunakan konfigurasi spesifik domain -->
+    <!--
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">api.kulnote.com</domain>
+    </domain-config>
+    -->
+</network-security-config>
+
