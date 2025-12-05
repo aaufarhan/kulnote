@@ -10,14 +10,18 @@ import com.example.kulnote.data.local.model.ScheduleEntity
 import com.example.kulnote.data.model.MataKuliah
 import com.example.kulnote.data.model.ScheduleInput
 import com.example.kulnote.data.model.network.ScheduleRequest
-import com.example.kulnote.data.repository.ScheduleRepository
 import com.example.kulnote.data.network.ApiClient
+import com.example.kulnote.data.network.SessionManager
+import com.example.kulnote.data.repository.ScheduleRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 // Ganti ViewModel menjadi AndroidViewModel karena membutuhkan Context
 class ScheduleViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -30,21 +34,38 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
 
     // --- STATE FLOW BARU (Mengambil dari Repository/Room) ---
     // Mengubah ScheduleEntity lokal menjadi MataKuliah Model yang digunakan UI
-    val mataKuliahList: StateFlow<List<MataKuliah>> = repository.getSchedulesFlow()
-        .map { entities ->
-            // Mapping dari ScheduleEntity (lokal) ke MataKuliah (UI Model)
-            entities.map { it.toUiModel() }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    val mataKuliahList: StateFlow<List<MataKuliah>> =
+        SessionManager.currentUserId
+            .flatMapLatest { userId ->
+                repository.getSchedulesFlow(userId)
+            }
+            .map { entities -> entities.map { it.toUiModel() } }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
-    // Inisialisasi: Panggil refresh untuk mengambil data pertama kali
+    // Inisialisasi: Panggil refresh jika token tersedia
     init {
-        // Panggil refresh data saat ViewModel dibuat
-        refreshDataFromNetwork()
+        // Jika token tersedia saat startup, lakukan satu kali refresh
+        if (ApiClient.authToken != null) {
+            refreshDataFromNetwork()
+        } else {
+            android.util.Log.d("ScheduleViewModel", "⚠️ Skip refresh: authToken belum tersedia")
+        }
+
+        // Observasi perubahan currentUserId dan refresh saat user baru login
+        viewModelScope.launch {
+            var lastUserId: String? = null
+            SessionManager.currentUserId.collect { userId ->
+                if (userId != null && userId != lastUserId) {
+                    lastUserId = userId
+                    android.util.Log.d("ScheduleViewModel", "🔁 Detected currentUserId change: $userId — refreshing")
+                    refreshDataFromNetwork()
+                }
+            }
+        }
     }
 
     // --- FUNGSI BARU UNTUK KOMUNIKASI NETWORK ---

@@ -3,14 +3,12 @@
 package com.example.kulnote.data.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.kulnote.data.network.ApiClient
-import com.example.kulnote.data.network.ApiService
+import com.example.kulnote.data.network.SessionManager
 import com.example.kulnote.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
 
@@ -27,6 +25,10 @@ class AuthViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    // NEW: expose currentUserId so other parts can observe
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+
     // Nanti: Anda harus menyimpan token ke DataStore/SharedPreferences di sini
 
     fun attemptLogin(email: String, password: String) {
@@ -38,6 +40,13 @@ class AuthViewModel : ViewModel() {
             if (response != null && response.status == "success") {
                 // 1. Simpan Token
                 ApiClient.authToken = response.token // Sementara simpan di ApiClient
+                SessionManager.authToken = response.token
+
+                // 1b. Simpan current user id
+                val userId = response.user.id
+                ApiClient.authToken = response.token
+                SessionManager.setCurrentUserId(userId)
+                _currentUserId.value = userId
 
                 // 2. Update status
                 _isLoggedIn.value = true
@@ -58,6 +67,13 @@ class AuthViewModel : ViewModel() {
             if (response != null && response.status == "success") {
                 // 1. Simpan Token (Laravel otomatis login setelah register)
                 ApiClient.authToken = response.token
+                SessionManager.authToken = response.token
+
+                // 1b. Simpan current user id
+                val userId = response.user.id
+                ApiClient.authToken = response.token
+                SessionManager.setCurrentUserId(userId)
+                _currentUserId.value = userId
 
                 // 2. Update status
                 _isLoggedIn.value = true

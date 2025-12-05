@@ -18,8 +18,9 @@ class ScheduleRepository(
 ) {
 
     // 1. READ: Aliran data utama dari Room (Offline-First)
-    fun getSchedulesFlow(): Flow<List<ScheduleEntity>> {
-        return scheduleDao.getAllSchedules()
+    fun getSchedulesFlow(userId: String? = null): Flow<List<ScheduleEntity>> {
+        return if (userId == null) scheduleDao.getAllSchedules()
+        else scheduleDao.getSchedulesForUser(userId)
     }
 
     // 2. REFRESH: Ambil data dari Network dan simpan ke Room
@@ -40,9 +41,9 @@ class ScheduleRepository(
                     // Konversi ApiModel ke Entity Room
                     val entities = apiData.map { it.toEntity() }
 
-                    // Simpan ke Room (Ini akan memicu update ke UI via Flow)
-                    scheduleDao.insertAll(entities)
-                    android.util.Log.d("ScheduleRepository", "💾 Disimpan ke Room: ${entities.size} jadwal")
+                    // REPLACE ALL: Hapus seluruh jadwal lokal lalu simpan entri baru (atomik)
+                    scheduleDao.replaceAll(entities)
+                    android.util.Log.d("ScheduleRepository", "💾 Disimpan ke Room: ${entities.size} jadwal (replaced)")
                 } else {
                     // Handle network error/unauthorized (misal: log error)
                     val errorBody = response.errorBody()?.string()

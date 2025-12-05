@@ -1,1 +1,23 @@
+# Module build
 /build
+
+# Local config
+local.properties
+secrets.properties
+keystore.properties
+.env
+.env.*
+
+# Generated
+/*.iml
+/.idea/
+
+# Google services
+google-services.json
+
+# Native build
+.cxx/
+.externalNativeBuild/
+
+# Ignore ApiClient source if it contains local secrets (note: this won't untrack an already committed file)
+src/main/java/com/example/kulnote/data/network/ApiClient.kt

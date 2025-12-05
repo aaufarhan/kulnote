@@ -1,15 +1,43 @@
+# IntelliJ / Android Studio
+/.idea/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+out/
+.vscode/
+
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local config (may contain BASE_URL, auth tokens)
 local.properties
+secrets.properties
+keystore.properties
+.env
+.env.*
+*.env
+
+# Keystores and signing
+*.jks
+*.keystore
+*.pem
+*.p12
+
+# Google services (may contain API keys)
+google-services.json
+google-services-*.json
+
+# Native build
+.cxx/
+.externalNativeBuild/
+
+# Misc
+.DS_Store
+*.log
+*.class
+*.apk
+*.ap_
+captures/
+
+# Kotlin
+.kotlin_module
