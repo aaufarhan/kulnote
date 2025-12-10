@@ -9,6 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,10 +22,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -32,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -57,7 +67,7 @@ fun NoteContentScreen(
         }
     }
 
-    // MODIFIKASI 1 (Lanjutan): Logika untuk mengambil nama folder/matkul
+    // Nama folder/matkul
     val mataKuliahList by scheduleViewModel.mataKuliahList.collectAsState()
     val folderName = remember(note, mataKuliahList) {
         mataKuliahList.find { it.id == note?.matkulId }?.namaMatkul ?: "Note"
@@ -78,7 +88,6 @@ fun NoteContentScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && photoUri != null) {
-            // Foto berhasil diambil, tambahkan ke noteContent
             val newImage = NoteContentItem.Image(
                 drawableResId = null,
                 imageUri = photoUri.toString()
@@ -91,7 +100,6 @@ fun NoteContentScreen(
             )
             showBottomSheet = false
         } else {
-            // Gagal atau dibatalkan, hapus file temporary
             currentPhotoFile?.delete()
         }
         photoUri = null
@@ -103,7 +111,6 @@ fun NoteContentScreen(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Permission granted, buat file dan launch camera
             try {
                 val photoFile = ImageUtils.createImageFile(context)
                 currentPhotoFile = photoFile
@@ -113,19 +120,59 @@ fun NoteContentScreen(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        } else {
-            // Permission denied
-            // Bisa tampilkan Toast atau Snackbar
         }
     }
 
-    //Logika Simpan Otomatis saat tombol Back ditekan
+    // Launcher untuk pick image dari galeri (SINGLE)
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val newImage = NoteContentItem.Image(
+                drawableResId = null,
+                imageUri = uri.toString()
+            )
+            insertContentItem(
+                noteContent,
+                newImage,
+                lastFocusedTextFieldIndex,
+                lastTextFieldCursorPosition
+            )
+            showBottomSheet = false
+        }
+    }
+
+    // Launcher untuk pick file
+    val pickFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                cursor.moveToFirst()
+                cursor.getString(nameIndex)
+            } ?: "Unknown File"
+
+            val newFile = NoteContentItem.File(
+                fileName = fileName,
+                fileUri = uri.toString()
+            )
+            insertContentItem(
+                noteContent,
+                newFile,
+                lastFocusedTextFieldIndex,
+                lastTextFieldCursorPosition
+            )
+            showBottomSheet = false
+        }
+    }
+
+    // Logika Simpan Otomatis
     fun saveChanges() {
         noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
         navController.popBackStack()
     }
 
-    // Intercept tombol back fisik
     BackHandler {
         saveChanges()
     }
@@ -136,23 +183,19 @@ fun NoteContentScreen(
             TopAppBar(
                 title = { Text(folderName) },
                 navigationIcon = {
-                    // Button Back
                     IconButton(onClick = { saveChanges() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    // Pastikan warna title di TopAppBar juga mengikuti tema
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         floatingActionButton = {
-            // Button Add
             FloatingActionButton(
                 onClick = { showBottomSheet = true },
-                // MODIFIKASI 4: Atur warna FAB agar mengikuti tema (seperti LoginScreen)
                 containerColor = MaterialTheme.colorScheme.onSurface,
                 contentColor = MaterialTheme.colorScheme.surface
             ) {
@@ -166,7 +209,7 @@ fun NoteContentScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-            // Item untuk Judul (UI-1)
+            // Title
             item {
                 TextField(
                     value = noteTitle,
@@ -174,7 +217,6 @@ fun NoteContentScreen(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = MaterialTheme.typography.titleLarge.copy(
                         fontSize = 24.sp,
-                        // MODIFIKASI 2: Jadikan judul Bold
                         fontWeight = FontWeight.Bold
                     ),
                     colors = TextFieldDefaults.colors(
@@ -186,15 +228,18 @@ fun NoteContentScreen(
                     placeholder = {
                         Text(
                             "Judul Catatan",
-                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         )
                     },
                     maxLines = 1
                 )
-                // MODIFIKASI 3: Ganti Spacer dengan Divider
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
+            // Content Items
             itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
                 when (item) {
                     is NoteContentItem.Text -> {
@@ -203,7 +248,7 @@ fun NoteContentScreen(
                             value = textValueState,
                             onValueChange = { newValue ->
                                 textValueState = newValue
-                                item.text = newValue.text // Update data model
+                                item.text = newValue.text
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -224,9 +269,7 @@ fun NoteContentScreen(
                         )
                     }
                     is NoteContentItem.Image -> {
-                        // Tampilkan gambar (UI-3)
                         if (item.imageUri != null) {
-                            // Gambar dari URI (foto kamera atau galeri)
                             AsyncImage(
                                 model = Uri.parse(item.imageUri),
                                 contentDescription = "Note Image",
@@ -237,28 +280,20 @@ fun NoteContentScreen(
                                     .clip(RoundedCornerShape(8.dp)),
                                 contentScale = ContentScale.Crop
                             )
-                        } else if (item.drawableResId != null) {
-                            // Gambar dari drawable resource
-                            Image(
-                                painter = painterResource(id = item.drawableResId),
-                                contentDescription = "Note Image",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp)
-                                    .heightIn(max = 250.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                            )
                         }
                     }
                     is NoteContentItem.File -> {
-                        // Tampilkan file (UI-3)
                         FileAttachmentItem(fileName = item.fileName)
+                    }
+                    else -> {
+                        // Handle other types (ImageGroup, etc) if any
                     }
                 }
             }
         }
     }
 
+    // Bottom Sheet
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { showBottomSheet = false },
@@ -267,22 +302,25 @@ fun NoteContentScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 BottomSheetOption(
                     icon = Icons.Default.PhotoCamera,
-                    text = "Add Photo"
+                    text = "Take Photo"
                 ) {
-                    // Request permission kamera
                     cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                 }
                 BottomSheetOption(
                     icon = Icons.Default.Image,
                     text = "Add Image"
                 ) {
-                    // TODO: Implementasi pilih gambar dari galeri
+                    pickImageLauncher.launch(
+                        androidx.activity.result.PickVisualMediaRequest(
+                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                        )
+                    )
                 }
                 BottomSheetOption(
                     icon = Icons.Default.AttachFile,
-                    text = "Add File"
+                    text = "Attach File"
                 ) {
-                    // TODO: Implementasi pilih file
+                    pickFileLauncher.launch(arrayOf("*/*"))
                 }
                 Spacer(modifier = Modifier.height(20.dp))
             }

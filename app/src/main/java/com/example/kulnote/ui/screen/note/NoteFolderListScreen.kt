@@ -2,6 +2,7 @@ package com.example.kulnote.ui.screen.note
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,6 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -105,6 +107,30 @@ fun FolderItem(
     var isPressed by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
+    // Deteksi tema sistem
+    val isDarkTheme = isSystemInDarkTheme()
+
+    // Container background: putih blur transparan untuk dark theme, hitam blur transparan untuk light theme
+    val containerColor = if (isDarkTheme) {
+        Color.White.copy(alpha = 0.15f) // Putih transparan blur untuk tema gelap
+    } else {
+        Color.Black.copy(alpha = 0.3f) // Hitam transparan blur untuk tema terang
+    }
+
+    // Border color: putih transparan untuk dark theme, hitam transparan untuk light theme
+    val borderColor = if (isDarkTheme) {
+        Color.White.copy(alpha = 0.2f) // Putih transparan untuk tema gelap
+    } else {
+        Color.Black.copy(alpha = 0.15f) // Hitam transparan untuk tema terang
+    }
+
+    // Icon folder adaptive: ic_folderdark untuk dark theme, ic_folderlight untuk light theme
+    val folderIcon = if (isDarkTheme) {
+        R.drawable.ic_folderdark // Icon folder untuk tema gelap
+    } else {
+        R.drawable.ic_folderlight // Icon folder untuk tema terang
+    }
+
     // animasi fade-in saat pertama kali tampil
     LaunchedEffect(Unit) {
         visible = true
@@ -139,11 +165,11 @@ fun FolderItem(
                     }
                 },
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            border = BorderStroke(1.dp, borderColor), // Border adaptive
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = containerColor // Container adaptive: putih blur (dark) / hitam blur (light)
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // No shadow untuk glassmorphism
         ) {
             Column(
                 modifier = Modifier
@@ -153,7 +179,7 @@ fun FolderItem(
                 verticalArrangement = Arrangement.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_folder),
+                    painter = painterResource(id = folderIcon),
                     contentDescription = "Folder Icon",
                     modifier = Modifier
                         .size(80.dp)

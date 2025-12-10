@@ -9,9 +9,6 @@ import java.util.*
 
 object ImageUtils {
 
-    /**
-     * Membuat file untuk menyimpan foto dari kamera
-     */
     fun createImageFile(context: Context): File {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val storageDir = context.getExternalFilesDir("Pictures")

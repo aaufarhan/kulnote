@@ -61,7 +61,16 @@ fun KulNoteApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBottomBar = currentRoute !in listOf("login") && currentRoute !in listOf("register")
+    // Bottom navbar hanya ditampilkan di main screens (note_folders, schedule, reminder_list, add_page)
+    // Disembunyikan di: login, register, note_list_screen, note_content_screen
+    val showBottomBar = when {
+        currentRoute == null -> false
+        currentRoute == "login" -> false
+        currentRoute == "register" -> false
+        currentRoute.startsWith("note_list_screen") -> false
+        currentRoute.startsWith("note_content_screen") -> false
+        else -> true
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
