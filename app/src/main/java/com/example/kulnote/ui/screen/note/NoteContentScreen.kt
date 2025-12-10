@@ -280,6 +280,17 @@ fun NoteContentScreen(
                                     .clip(RoundedCornerShape(8.dp)),
                                 contentScale = ContentScale.Crop
                             )
+                        } else if (item.drawableResId != null) {
+                            Image(
+                                painter = painterResource(id = item.drawableResId),
+                                contentDescription = "Note Image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                                    .heightIn(max = 250.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
                         }
                     }
                     is NoteContentItem.File -> {
