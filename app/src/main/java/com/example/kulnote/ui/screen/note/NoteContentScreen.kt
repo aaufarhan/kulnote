@@ -1,6 +1,9 @@
 package com.example.kulnote.ui.screen.note
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +23,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -29,11 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.kulnote.R
+import coil.compose.AsyncImage
 import com.example.kulnote.data.model.NoteContentItem
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
-import kotlinx.coroutines.launch
+import com.example.kulnote.util.ImageUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +48,7 @@ fun NoteContentScreen(
     noteViewModel: NoteViewModel,
     scheduleViewModel: ScheduleViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val note = remember(noteId) { noteViewModel.getNoteById(noteId) }
     var noteTitle by remember { mutableStateOf(note?.title ?: "Judul") }
     val noteContent = remember {
@@ -59,10 +65,59 @@ fun NoteContentScreen(
 
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     var lastFocusedTextFieldIndex by remember { mutableStateOf(0) }
     var lastTextFieldCursorPosition by remember { mutableStateOf(TextRange.Zero) }
+
+    // State untuk menyimpan URI foto yang akan diambil
+    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var currentPhotoFile by remember { mutableStateOf<java.io.File?>(null) }
+
+    // Launcher untuk mengambil foto
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && photoUri != null) {
+            // Foto berhasil diambil, tambahkan ke noteContent
+            val newImage = NoteContentItem.Image(
+                drawableResId = null,
+                imageUri = photoUri.toString()
+            )
+            insertContentItem(
+                noteContent,
+                newImage,
+                lastFocusedTextFieldIndex,
+                lastTextFieldCursorPosition
+            )
+            showBottomSheet = false
+        } else {
+            // Gagal atau dibatalkan, hapus file temporary
+            currentPhotoFile?.delete()
+        }
+        photoUri = null
+        currentPhotoFile = null
+    }
+
+    // Launcher untuk request permission kamera
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, buat file dan launch camera
+            try {
+                val photoFile = ImageUtils.createImageFile(context)
+                currentPhotoFile = photoFile
+                val uri = ImageUtils.getUriForFile(context, photoFile)
+                photoUri = uri
+                takePictureLauncher.launch(uri)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            // Permission denied
+            // Bisa tampilkan Toast atau Snackbar
+        }
+    }
 
     //Logika Simpan Otomatis saat tombol Back ditekan
     fun saveChanges() {
@@ -137,7 +192,7 @@ fun NoteContentScreen(
                     maxLines = 1
                 )
                 // MODIFIKASI 3: Ganti Spacer dengan Divider
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
             itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
@@ -165,20 +220,35 @@ fun NoteContentScreen(
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent
                             ),
-                            placeholder = { Text("Ketik sesuatu...") }
+                            placeholder = { Text("") }
                         )
                     }
                     is NoteContentItem.Image -> {
                         // Tampilkan gambar (UI-3)
-                        Image(
-                            painter = painterResource(id = item.drawableResId),
-                            contentDescription = "Note Image",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                                .heightIn(max = 250.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                        )
+                        if (item.imageUri != null) {
+                            // Gambar dari URI (foto kamera atau galeri)
+                            AsyncImage(
+                                model = Uri.parse(item.imageUri),
+                                contentDescription = "Note Image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                                    .heightIn(max = 250.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else if (item.drawableResId != null) {
+                            // Gambar dari drawable resource
+                            Image(
+                                painter = painterResource(id = item.drawableResId),
+                                contentDescription = "Note Image",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                                    .heightIn(max = 250.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                        }
                     }
                     is NoteContentItem.File -> {
                         // Tampilkan file (UI-3)
@@ -199,19 +269,20 @@ fun NoteContentScreen(
                     icon = Icons.Default.PhotoCamera,
                     text = "Add Photo"
                 ) {
-
+                    // Request permission kamera
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                 }
                 BottomSheetOption(
                     icon = Icons.Default.Image,
                     text = "Add Image"
                 ) {
-
+                    // TODO: Implementasi pilih gambar dari galeri
                 }
                 BottomSheetOption(
                     icon = Icons.Default.AttachFile,
                     text = "Add File"
                 ) {
-
+                    // TODO: Implementasi pilih file
                 }
                 Spacer(modifier = Modifier.height(20.dp))
             }

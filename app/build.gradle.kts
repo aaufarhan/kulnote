@@ -75,6 +75,10 @@ dependencies {
 
     // Coroutine (untuk operasi asinkron)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+
+    // Coil untuk image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     implementation(libs.androidx.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

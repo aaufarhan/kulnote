@@ -68,7 +68,6 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // --- FUNGSI BARU UNTUK KOMUNIKASI NETWORK ---
 
     // Fungsi untuk menarik data terbaru dari server
     fun refreshDataFromNetwork() {
