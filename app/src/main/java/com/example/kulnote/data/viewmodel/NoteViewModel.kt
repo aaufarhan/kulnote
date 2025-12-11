@@ -42,17 +42,28 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     // Error state
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+    
+    // Job untuk collection Flow agar bisa di-cancel
+    private var flowCollectionJob: kotlinx.coroutines.Job? = null
 
     // --- FUNCTIONS ---
     
     // Set matkul ID dan load notes untuk matkul tersebut
     fun setCurrentMatkul(matkulId: String) {
-        if (_currentMatkulId.value == matkulId) return // Sudah di-set
+        if (_currentMatkulId.value == matkulId) {
+            Log.d("NoteViewModel", "⚠️ MatkulId sudah sama, skip re-initialization")
+            return // Sudah di-set
+        }
         
+        Log.d("NoteViewModel", "🎯 Setting current matkulId: $matkulId")
         _currentMatkulId.value = matkulId
         
+        // Cancel job lama jika ada
+        flowCollectionJob?.cancel()
+        
         // Observe notes dari Room untuk matkul ini
-        viewModelScope.launch {
+        flowCollectionJob = viewModelScope.launch {
+            Log.d("NoteViewModel", "👀 Starting to observe notes for matkulId: $matkulId")
             repository.getNotesForMatkul(matkulId).collect { notes ->
                 _noteList.value = notes
                 Log.d("NoteViewModel", "📊 Notes updated: ${notes.size} items")
@@ -64,14 +75,17 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Refresh notes dari server
-    fun refreshNotes(matkulId: String = _currentMatkulId.value ?: return) {
+    fun refreshNotes(matkulId: String? = null) {
+        val targetMatkulId = matkulId ?: _currentMatkulId.value
+        if (targetMatkulId == null) return
+        
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _error.value = null
-                Log.d("NoteViewModel", "🔄 Refreshing notes for matkul: $matkulId")
+                Log.d("NoteViewModel", "🔄 Refreshing notes for matkul: $targetMatkulId")
                 
-                repository.refreshNotes(matkulId)
+                repository.refreshNotes(targetMatkulId)
                 
                 Log.d("NoteViewModel", "✅ Refresh berhasil")
             } catch (e: Exception) {

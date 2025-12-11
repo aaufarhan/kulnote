@@ -117,11 +117,10 @@ fun AddNoteForm(
 
                     Button(
                         onClick = {
-                            val newNoteId = noteViewModel.saveNewNote(input)
-                            onDismiss() // Tutup dialog
-
-                            if (newNoteId != null) {
-                                // Navigasi ke editor setelah dialog ditutup
+                            noteViewModel.saveNewNote(input) { newNoteId ->
+                                // Callback dipanggil setelah note berhasil disimpan
+                                onDismiss() // Tutup dialog
+                                // Navigasi ke editor dengan note ID yang baru
                                 navController.navigate("note_content_screen/$newNoteId")
                             }
                         },

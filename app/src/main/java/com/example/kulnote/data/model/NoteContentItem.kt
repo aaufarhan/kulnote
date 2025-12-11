@@ -9,6 +9,8 @@ sealed class NoteContentItem {
     data class Image(
         @DrawableRes val drawableResId: Int? = null,
         val imageUri: String? = null,
+        val widthPx: Int = 750,  // Default ~250dp @ 3x density
+        val heightPx: Int = 600,  // Default ~200dp @ 3x density
         val isInline: Boolean = true // true = inline dengan text, false = block
     ) : NoteContentItem()
 

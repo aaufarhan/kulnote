@@ -1,6 +1,8 @@
 package com.example.kulnote.ui.screen.note
 
 import android.net.Uri
+import android.content.Intent
+import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,11 +61,40 @@ fun NoteContentScreen(
     scheduleViewModel: ScheduleViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val note = remember(noteId) { noteViewModel.getNoteById(noteId) }
+    
+    // Observe note dari noteList StateFlow
+    val noteList by noteViewModel.noteList.collectAsState()
+    val note = remember(noteId, noteList) { 
+        noteList.find { it.id == noteId } 
+    }
+    
+    // Try to get matkulId from note, if available
+    val matkulId = note?.matkulId
+    
+    // Set current matkul ID once when we know it
+    LaunchedEffect(matkulId) {
+        if (matkulId != null) {
+            android.util.Log.d("NoteContentScreen", "🎯 Setting matkulId: $matkulId for noteId: $noteId")
+            noteViewModel.setCurrentMatkul(matkulId)
+        } else {
+            android.util.Log.w("NoteContentScreen", "⚠️ MatkulId is null, waiting for note data...")
+        }
+    }
+    
     var noteTitle by remember { mutableStateOf(note?.title ?: "Judul") }
     val noteContent = remember {
         mutableStateListOf<NoteContentItem>().apply {
             addAll(note?.content ?: listOf(NoteContentItem.Text("")))
+        }
+    }
+    
+    // Update title and content when note changes
+    LaunchedEffect(note) {
+        note?.let {
+            noteTitle = it.title
+            noteContent.clear()
+            noteContent.addAll(it.content)
+            android.util.Log.d("NoteContentScreen", "📝 Note loaded: ${it.title} with ${it.content.size} content items")
         }
     }
 
@@ -98,6 +129,8 @@ fun NoteContentScreen(
                 lastFocusedTextFieldIndex,
                 lastTextFieldCursorPosition
             )
+            // Persist immediately so server/local DB receives update
+            noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
             showBottomSheet = false
         } else {
             currentPhotoFile?.delete()
@@ -138,6 +171,8 @@ fun NoteContentScreen(
                 lastFocusedTextFieldIndex,
                 lastTextFieldCursorPosition
             )
+            // Persist immediately
+            noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
             showBottomSheet = false
         }
     }
@@ -147,10 +182,21 @@ fun NoteContentScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                cursor.moveToFirst()
-                cursor.getString(nameIndex)
+            // Try to take persistable permission so the app can access the file later (if system allowed)
+            try {
+                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(uri, takeFlags)
+            } catch (e: Exception) {
+                // Not fatal — continue without persist
+                e.printStackTrace()
+            }
+
+            // Query display name safely using projection
+            val fileName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0) cursor.getString(nameIndex) else "Unknown File"
+                } else "Unknown File"
             } ?: "Unknown File"
 
             val newFile = NoteContentItem.File(
@@ -163,6 +209,8 @@ fun NoteContentScreen(
                 lastFocusedTextFieldIndex,
                 lastTextFieldCursorPosition
             )
+            // Persist immediately (auto-save)
+            noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
             showBottomSheet = false
         }
     }

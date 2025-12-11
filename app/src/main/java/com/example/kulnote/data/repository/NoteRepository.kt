@@ -1,4 +1,4 @@
-bipackage com.example.kulnote.data.repository
+package com.example.kulnote.data.repository
 
 import android.util.Log
 import com.example.kulnote.data.local.dao.NoteDao
@@ -63,7 +63,7 @@ class NoteRepository(
         }
     }
 
-    // 3. CREATE: Simpan ke server, refresh lokal
+    // 3. CREATE: Simpan ke server, langsung insert ke Room
     suspend fun createNote(request: NoteRequest): String {
         return withContext(Dispatchers.IO) {
             try {
@@ -81,14 +81,16 @@ class NoteRepository(
                 }
 
                 val savedNote = response.body()?.data
+                    ?: throw Exception("Note data is null")
                 Log.d("NoteRepository", "✅ Note tersimpan di server: $savedNote")
 
-                // Refresh data lokal
-                Log.d("NoteRepository", "🔄 Refreshing local data...")
-                refreshNotes(request.idJadwal)
+                // Langsung insert ke Room untuk akses instant
+                val entity = savedNote.toEntity()
+                noteDao.insert(entity)
+                Log.d("NoteRepository", "💾 Note langsung disimpan ke Room")
                 
                 // Return note ID
-                savedNote?.id ?: throw Exception("Note ID is null")
+                savedNote.id
             } catch (e: Exception) {
                 Log.e("NoteRepository", "❌ Create Error: ${e.message}", e)
                 throw e
@@ -223,8 +225,8 @@ fun ContentItemJson.toNoteContentItem(): NoteContentItem {
             drawableResId = this.drawableResId,
             imageUri = this.imageUri,
             widthPx = this.widthPx ?: 750,  // Default ~250dp @ 3x density (match reference)
-            heightPx = this.heightPx ?: 600  // Default ~200dp @ 3x density
-            // No isInline - images are always block-level (Top & Bottom)
+            heightPx = this.heightPx ?: 600,  // Default ~200dp @ 3x density
+            isInline = false // No isInline - images are always block-level (Top & Bottom)
         )
         "file" -> NoteContentItem.File(
             fileName = this.fileName ?: "Unknown File",
@@ -254,12 +256,12 @@ fun NoteContentItem.toContentItemJson(): ContentItemJson {
             isInline = false // Always false - images are block-level
         )
         is NoteContentItem.File -> ContentItemJson(
-            type = "File",
+            type = "file",
             fileName = this.fileName,
             fileUri = this.fileUri
         )
         is NoteContentItem.ImageGroup -> ContentItemJson(
-            type = "ImageGroup",
+            type = "imagegroup",
             imageUris = this.imageUris,
             isInline = this.isInline
         )
