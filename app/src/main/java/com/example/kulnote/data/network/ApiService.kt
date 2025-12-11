@@ -3,12 +3,19 @@
 package com.example.kulnote.data.network
 
 import com.example.kulnote.data.model.network.LoginResponse
+import com.example.kulnote.data.model.network.NoteListResponse
+import com.example.kulnote.data.model.network.NoteRequest
+import com.example.kulnote.data.model.network.NoteResponse
 import com.example.kulnote.data.model.network.ScheduleApiModel
 import com.example.kulnote.data.model.network.ScheduleRequest
+import com.example.kulnote.data.model.network.SimpleResponse
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -37,5 +44,27 @@ interface ApiService {
     @POST("schedules")
     fun createSchedule(@Body request: ScheduleRequest): Call<ScheduleApiModel>
 
-    // Tambahkan GET/POST/PUT/DELETE untuk Catatan dan Reminder nanti...
+    // 3. ENDPOINT CRUD NOTES
+
+    // Mengambil semua notes untuk user (optional filter by matkulId)
+    @GET("notes")
+    fun getNotes(@Query("matkulId") matkulId: String? = null): Call<NoteListResponse>
+
+    // Mengambil note berdasarkan ID
+    @GET("notes/{id}")
+    fun getNoteById(@Path("id") noteId: String): Call<NoteResponse>
+
+    // Membuat note baru
+    @POST("notes")
+    fun createNote(@Body request: NoteRequest): Call<NoteResponse>
+
+    // Update note
+    @PUT("notes/{id}")
+    fun updateNote(@Path("id") noteId: String, @Body request: NoteRequest): Call<NoteResponse>
+
+    // Hapus note
+    @DELETE("notes/{id}")
+    fun deleteNote(@Path("id") noteId: String): Call<SimpleResponse>
+
+    // Tambahkan endpoint Reminder nanti...
 }

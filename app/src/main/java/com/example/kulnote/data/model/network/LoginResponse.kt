@@ -18,6 +18,6 @@ data class LoginResponse(
 
 data class UserData(
     val id: String,
-    val nama: String,
+    val name: String,
     val email: String
 )

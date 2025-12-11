@@ -6,15 +6,17 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.kulnote.data.local.dao.NoteDao
 import com.example.kulnote.data.local.dao.ScheduleDao
+import com.example.kulnote.data.local.model.NoteEntity
 import com.example.kulnote.data.local.model.ScheduleEntity
 
-@Database(entities = [ScheduleEntity::class], version = 1, exportSchema = false)
+@Database(entities = [ScheduleEntity::class, NoteEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun scheduleDao(): ScheduleDao
+    abstract fun noteDao(): NoteDao
 
-    // Nanti ditambahkan: abstract fun noteDao(): NoteDao
     // Nanti ditambahkan: abstract fun reminderDao(): ReminderDao
 
     companion object {
@@ -27,7 +29,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "kulnote_db"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration() // Sementara untuk development
+                    .build()
                 INSTANCE = instance
                 instance
             }
