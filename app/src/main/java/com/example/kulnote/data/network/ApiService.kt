@@ -2,6 +2,8 @@
 
 package com.example.kulnote.data.network
 
+import com.example.kulnote.data.model.network.FileDeleteRequest
+import com.example.kulnote.data.model.network.FileUploadResponse
 import com.example.kulnote.data.model.network.LoginResponse
 import com.example.kulnote.data.model.network.NoteListResponse
 import com.example.kulnote.data.model.network.NoteRequest
@@ -13,8 +15,11 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -65,6 +70,20 @@ interface ApiService {
     // Hapus note
     @DELETE("notes/{id}")
     fun deleteNote(@Path("id") noteId: String): Call<SimpleResponse>
+
+    // === FILE UPLOAD & MANAGEMENT ===
+    
+    // Upload file (image/document)
+    @Multipart
+    @POST("files/upload")
+    fun uploadFile(
+        @Part file: okhttp3.MultipartBody.Part,
+        @Part("type") type: okhttp3.RequestBody
+    ): Call<FileUploadResponse>
+    
+    // Delete file
+    @HTTP(method = "DELETE", path = "files/delete", hasBody = true)
+    fun deleteFile(@Body request: FileDeleteRequest): Call<SimpleResponse>
 
     // Tambahkan endpoint Reminder nanti...
 }

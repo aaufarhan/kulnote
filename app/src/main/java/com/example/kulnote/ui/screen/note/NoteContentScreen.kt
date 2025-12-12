@@ -45,12 +45,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.kulnote.data.model.NoteContentItem
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.util.ImageUtils
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,23 +117,43 @@ fun NoteContentScreen(
     var currentPhotoFile by remember { mutableStateOf<java.io.File?>(null) }
 
     // Launcher untuk mengambil foto
+    // State untuk upload progress
+    var isUploading by remember { mutableStateOf(false) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
+
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && photoUri != null) {
-            val newImage = NoteContentItem.Image(
-                drawableResId = null,
-                imageUri = photoUri.toString()
-            )
-            insertContentItem(
-                noteContent,
-                newImage,
-                lastFocusedTextFieldIndex,
-                lastTextFieldCursorPosition
-            )
-            // Persist immediately so server/local DB receives update
-            noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
-            showBottomSheet = false
+            // Upload image to server first
+            isUploading = true
+            uploadError = null
+            
+            noteViewModel.viewModelScope.launch {
+                val result = com.example.kulnote.util.FileUploadHelper.uploadImage(context, photoUri!!)
+                
+                result.onSuccess { serverUrl ->
+                    // Use server URL instead of local URI
+                    val newImage = NoteContentItem.Image(
+                        drawableResId = null,
+                        imageUri = serverUrl
+                    )
+                    insertContentItem(
+                        noteContent,
+                        newImage,
+                        lastFocusedTextFieldIndex,
+                        lastTextFieldCursorPosition
+                    )
+                    // Persist immediately
+                    noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
+                    isUploading = false
+                    showBottomSheet = false
+                }.onFailure { e ->
+                    uploadError = "Upload gagal: ${e.message}"
+                    isUploading = false
+                    currentPhotoFile?.delete()
+                }
+            }
         } else {
             currentPhotoFile?.delete()
         }
@@ -161,19 +183,34 @@ fun NoteContentScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            val newImage = NoteContentItem.Image(
-                drawableResId = null,
-                imageUri = uri.toString()
-            )
-            insertContentItem(
-                noteContent,
-                newImage,
-                lastFocusedTextFieldIndex,
-                lastTextFieldCursorPosition
-            )
-            // Persist immediately
-            noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
-            showBottomSheet = false
+            // Upload image to server first
+            isUploading = true
+            uploadError = null
+            
+            noteViewModel.viewModelScope.launch {
+                val result = com.example.kulnote.util.FileUploadHelper.uploadImage(context, uri)
+                
+                result.onSuccess { serverUrl ->
+                    // Use server URL instead of local URI
+                    val newImage = NoteContentItem.Image(
+                        drawableResId = null,
+                        imageUri = serverUrl
+                    )
+                    insertContentItem(
+                        noteContent,
+                        newImage,
+                        lastFocusedTextFieldIndex,
+                        lastTextFieldCursorPosition
+                    )
+                    // Persist immediately
+                    noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
+                    isUploading = false
+                    showBottomSheet = false
+                }.onFailure { e ->
+                    uploadError = "Upload gagal: ${e.message}"
+                    isUploading = false
+                }
+            }
         }
     }
 
@@ -182,15 +219,6 @@ fun NoteContentScreen(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            // Try to take persistable permission so the app can access the file later (if system allowed)
-            try {
-                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(uri, takeFlags)
-            } catch (e: Exception) {
-                // Not fatal — continue without persist
-                e.printStackTrace()
-            }
-
             // Query display name safely using projection
             val fileName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
@@ -199,19 +227,34 @@ fun NoteContentScreen(
                 } else "Unknown File"
             } ?: "Unknown File"
 
-            val newFile = NoteContentItem.File(
-                fileName = fileName,
-                fileUri = uri.toString()
-            )
-            insertContentItem(
-                noteContent,
-                newFile,
-                lastFocusedTextFieldIndex,
-                lastTextFieldCursorPosition
-            )
-            // Persist immediately (auto-save)
-            noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
-            showBottomSheet = false
+            // Upload file to server first
+            isUploading = true
+            uploadError = null
+            
+            noteViewModel.viewModelScope.launch {
+                val result = com.example.kulnote.util.FileUploadHelper.uploadDocument(context, uri, fileName)
+                
+                result.onSuccess { serverUrl ->
+                    // Use server URL instead of local URI
+                    val newFile = NoteContentItem.File(
+                        fileName = fileName,
+                        fileUri = serverUrl
+                    )
+                    insertContentItem(
+                        noteContent,
+                        newFile,
+                        lastFocusedTextFieldIndex,
+                        lastTextFieldCursorPosition
+                    )
+                    // Persist immediately
+                    noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
+                    isUploading = false
+                    showBottomSheet = false
+                }.onFailure { e ->
+                    uploadError = "Upload file gagal: ${e.message}"
+                    isUploading = false
+                }
+            }
         }
     }
 
@@ -251,12 +294,13 @@ fun NoteContentScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+            ) {
             // Title
             item {
                 TextField(
@@ -385,7 +429,41 @@ fun NoteContentScreen(
             }
         }
     }
-}
+    
+    // Upload Progress Overlay
+    if (isUploading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .zIndex(10f),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Uploading...",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
+            }
+        }
+    }
+    
+    // Upload Error Snackbar
+    uploadError?.let { error ->
+        LaunchedEffect(error) {
+            // Show error for 3 seconds then clear
+            kotlinx.coroutines.delay(3000)
+            uploadError = null
+        }
+    }
+        }
+    }
+
 
 @Composable
 fun FileAttachmentItem(fileName: String) {
