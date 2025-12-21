@@ -154,7 +154,7 @@ fun NoteItem(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Hapus") },
+                        text = { Text("Delete") },
                         onClick = {
                             showMenu = false
                             onDelete()

@@ -3,13 +3,31 @@ package com.example.kulnote
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -23,6 +41,8 @@ import androidx.navigation.navArgument
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ReminderViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
+import com.example.kulnote.data.viewmodel.AuthViewModel
+import com.example.kulnote.data.model.network.UserData
 import com.example.kulnote.ui.navigation.BottomNavBar
 import com.example.kulnote.ui.screen.auth.LoginScreen
 import com.example.kulnote.ui.screen.addpage.AddPageScreen
@@ -33,10 +53,19 @@ import com.example.kulnote.ui.screen.note.NoteListScreen
 import com.example.kulnote.ui.screen.reminder.ReminderListScreen
 import com.example.kulnote.ui.screen.schedule.ScheduleListScreen
 import com.example.kulnote.ui.theme.KulnoteTheme
+import com.example.kulnote.data.network.SessionManager
+import com.example.kulnote.data.network.PreferencesManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize PreferencesManager
+        PreferencesManager.init(this)
+        
+        // Load session dari SharedPreferences
+        SessionManager.loadSession()
+        
         setContent {
             KulnoteTheme {
                 Surface(
@@ -57,12 +86,12 @@ fun KulNoteApp() {
     val scheduleViewModel: ScheduleViewModel = viewModel()
     val noteViewModel: NoteViewModel = viewModel()
     val reminderViewModel: ReminderViewModel = viewModel()
+    val authViewModel: AuthViewModel = viewModel()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val currentUser by SessionManager.currentUser.collectAsState()
 
-    // Bottom navbar hanya ditampilkan di main screens (note_folders, schedule, reminder_list, add_page)
-    // Disembunyikan di: login, register, note_list_screen, note_content_screen
     val showBottomBar = when {
         currentRoute == null -> false
         currentRoute == "login" -> false
@@ -82,6 +111,17 @@ fun KulNoteApp() {
                             text = "kulnote.",
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
+                        )
+                    },
+                    actions = {
+                        ProfileMenu(
+                            currentUser = currentUser,
+                            onLogout = {
+                                authViewModel.logout()
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
                         )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -113,9 +153,13 @@ fun NavigationGraph(
     noteViewModel: NoteViewModel,
     reminderViewModel: ReminderViewModel
 ) {
+    // Cek apakah user sudah login
+    val isLoggedIn = PreferencesManager.isLoggedIn()
+    val startDestination = if (isLoggedIn) "note_folders" else "login"
+    
     NavHost(
         navController = navController,
-        startDestination = "login",
+        startDestination = startDestination,
         modifier = modifier
     ) {
 
@@ -188,6 +232,75 @@ fun NavigationGraph(
                 // Jika karena alasan tertentu noteId null, kembali ke layar sebelumnya
                 navController.popBackStack()
             }
+        }
+    }
+}
+
+@Composable
+fun ProfileMenu(
+    currentUser: UserData?,
+    onLogout: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_user),
+                contentDescription = "Profile Menu",
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            // Header - Nama dan Email
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = currentUser?.email ?: "ica@gmail.com",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = currentUser?.name ?: "Mahasiswa",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            
+            Divider()
+            
+            // Menu Logout
+            DropdownMenuItem(
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_logout),
+                            contentDescription = "Logout",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Log Out",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                onClick = {
+                    expanded = false
+                    onLogout()
+                }
+            )
         }
     }
 }

@@ -38,17 +38,13 @@ class AuthViewModel : ViewModel() {
         repository.login(email, password) { response, errorMessage ->
             _isLoading.value = false
             if (response != null && response.status == "success") {
-                // 1. Simpan Token
-                ApiClient.authToken = response.token // Sementara simpan di ApiClient
+                ApiClient.authToken = response.token
                 SessionManager.authToken = response.token
 
-                // 1b. Simpan current user id
-                val userId = response.user.id
-                ApiClient.authToken = response.token
-                SessionManager.setCurrentUserId(userId)
-                _currentUserId.value = userId
+                val userData = response.user
+                SessionManager.setCurrentUser(userData)
+                _currentUserId.value = userData.id
 
-                // 2. Update status
                 _isLoggedIn.value = true
 
             } else {
@@ -65,21 +61,23 @@ class AuthViewModel : ViewModel() {
         repository.register(nama, email, password) { response, errorMessage ->
             _isLoading.value = false
             if (response != null && response.status == "success") {
-                // 1. Simpan Token (Laravel otomatis login setelah register)
                 ApiClient.authToken = response.token
                 SessionManager.authToken = response.token
 
-                // 1b. Simpan current user id
-                val userId = response.user.id
-                ApiClient.authToken = response.token
-                SessionManager.setCurrentUserId(userId)
-                _currentUserId.value = userId
+                val userData = response.user
+                SessionManager.setCurrentUser(userData)
+                _currentUserId.value = userData.id
 
-                // 2. Update status
                 _isLoggedIn.value = true
             } else {
                 _error.value = errorMessage ?: response?.message ?: "Registrasi Gagal"
             }
         }
+    }
+
+    fun logout() {
+        SessionManager.clearSession()
+        _isLoggedIn.value = false
+        _currentUserId.value = null
     }
 }

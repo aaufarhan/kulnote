@@ -211,7 +211,7 @@ fun ScheduleItemCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Hapus") },
+                        text = { Text("Delete") },
                         onClick = {
                             showMenu = false
                             onDelete()
