@@ -18,7 +18,6 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.kulnote.data.model.ScheduleInput
-import com.example.kulnote.data.viewmodel.ScheduleViewModel
 
 private val daysOfWeek = listOf(
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
@@ -84,13 +83,22 @@ class TimeVisualTransformation : VisualTransformation {
 @Composable
 fun AddScheduleForm(
     onDismiss: () -> Unit,
-    viewModel: ScheduleViewModel
+    initialInput: ScheduleInput = ScheduleInput(),
+    title: String = "New Schedule",
+    confirmLabel: String = "Save",
+    onSubmit: (ScheduleInput) -> Unit
 ) {
-    var input by remember { mutableStateOf(ScheduleInput()) }
+    var input by remember { mutableStateOf(initialInput) }
     val isButtonEnabled = remember(input) { input.namaMatkul.isNotBlank() && input.hari.isNotBlank() && input.jamMulai.isNotBlank() && input.jamSelesai.isNotBlank() && input.sks.isNotBlank() }
-    var sksText by remember { mutableStateOf("") }
-    var dosenText by remember { mutableStateOf("") }
+    var sksText by remember { mutableStateOf(initialInput.sks) }
+    var dosenText by remember { mutableStateOf(initialInput.dosen) }
     var isExpanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(initialInput) {
+        input = initialInput
+        sksText = initialInput.sks
+        dosenText = initialInput.dosen
+    }
 
     // Logika Hitung Waktu Otomatis SKS
     LaunchedEffect(input.jamMulai, sksText) {
@@ -122,7 +130,7 @@ fun AddScheduleForm(
         ) {
 
             Text(
-                text = "New Schedule",
+                text = title,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -250,7 +258,7 @@ fun AddScheduleForm(
                 Button(
                     onClick = {
                         if (isButtonEnabled) {
-                            viewModel.saveNewSchedule(input)
+                            onSubmit(input)
                             onDismiss()
                         }
                     },
@@ -259,7 +267,7 @@ fun AddScheduleForm(
                         .weight(1f)
                         .padding(start = 8.dp)
                 ) {
-                    Text("Save")
+                    Text(confirmLabel)
                 }
             }
         }

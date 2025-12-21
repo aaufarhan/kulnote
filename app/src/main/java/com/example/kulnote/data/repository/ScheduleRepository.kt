@@ -82,6 +82,56 @@ class ScheduleRepository(
             refreshSchedules()
         }
     }
+
+    // 4. UPDATE: Perbarui Jadwal di Network dan Refresh Lokal
+    suspend fun updateSchedule(scheduleId: String, request: ScheduleRequest) {
+        withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("ScheduleRepository", "📤 PUT /api/schedules/$scheduleId")
+
+                val response = apiService.updateSchedule(scheduleId, request).awaitResponse()
+
+                android.util.Log.d("ScheduleRepository", "📥 Response Code: ${response.code()}")
+
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string()
+                    android.util.Log.e("ScheduleRepository", "❌ Update Error ${response.code()}: $errorBody")
+                    throw Exception("Gagal update jadwal: ${response.code()} - $errorBody")
+                }
+
+                refreshSchedules()
+                android.util.Log.d("ScheduleRepository", "✅ Jadwal berhasil diupdate dan lokal disinkronkan")
+            } catch (e: Exception) {
+                android.util.Log.e("ScheduleRepository", "❌ Update Error: ${e.message}", e)
+                throw e
+            }
+        }
+    }
+
+    // 5. DELETE: Hapus Jadwal dari Network dan Lokal
+    suspend fun deleteSchedule(scheduleId: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("ScheduleRepository", "📤 DELETE /api/schedules/$scheduleId")
+
+                val response = apiService.deleteSchedule(scheduleId).awaitResponse()
+
+                android.util.Log.d("ScheduleRepository", "📥 Response Code: ${response.code()}")
+
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string()
+                    android.util.Log.e("ScheduleRepository", "❌ Delete Error ${response.code()}: $errorBody")
+                    throw Exception("Gagal hapus jadwal: ${response.code()} - $errorBody")
+                }
+
+                scheduleDao.deleteById(scheduleId)
+                android.util.Log.d("ScheduleRepository", "✅ Jadwal dihapus dari lokal")
+            } catch (e: Exception) {
+                android.util.Log.e("ScheduleRepository", "❌ Delete Error: ${e.message}", e)
+                throw e
+            }
+        }
+    }
 }
 
 // Extension function untuk konversi data

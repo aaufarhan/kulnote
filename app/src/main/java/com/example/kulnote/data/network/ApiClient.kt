@@ -23,7 +23,8 @@ object ApiClient {
     // Cari IP dengan: ipconfig di CMD (cari "IPv4 Address")
     // Jalankan server: php artisan serve --host=0.0.0.0 --port=8000
     // PASTIKAN HP & PC WIFI SAMA!
-    const val BASE_URL = "http://192.168.100.20:8000/api/"
+    // const val BASE_URL = "http://192.168.100.20:8000/api/"
+    const val BASE_URL = "http://192.168.110.214:8000/api/"
 
     // ✅ OPTION 3: UNTUK EMULATOR GENYMOTION
     // const val BASE_URL = "http://10.0.3.2:8000/api/"

@@ -113,6 +113,41 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+    fun deleteSchedule(scheduleId: String) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ScheduleViewModel", "🗑️ Menghapus jadwal: $scheduleId")
+                repository.deleteSchedule(scheduleId)
+                android.util.Log.d("ScheduleViewModel", "✅ Jadwal berhasil dihapus")
+            } catch (e: Exception) {
+                android.util.Log.e("ScheduleViewModel", "❌ Gagal hapus jadwal: ${e.message}", e)
+            }
+        }
+    }
+
+    fun updateSchedule(scheduleId: String, input: ScheduleInput) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ScheduleViewModel", "✏️ Mengubah jadwal: $scheduleId")
+
+                val request = ScheduleRequest(
+                    namaMatakuliah = input.namaMatkul,
+                    sks = input.sks.toIntOrNull() ?: 0,
+                    dosen = input.dosen,
+                    hari = input.hari,
+                    jamMulai = input.jamMulai.take(4).chunked(2).joinToString(":") + ":00",
+                    jamSelesai = input.jamSelesai.take(4).chunked(2).joinToString(":") + ":00",
+                    ruangan = input.ruangan
+                )
+
+                repository.updateSchedule(scheduleId, request)
+                android.util.Log.d("ScheduleViewModel", "✅ Jadwal berhasil diupdate")
+            } catch (e: Exception) {
+                android.util.Log.e("ScheduleViewModel", "❌ Gagal update jadwal: ${e.message}", e)
+            }
+        }
+    }
 }
 
 // --- EXTENSION UNTUK MAPPING ---

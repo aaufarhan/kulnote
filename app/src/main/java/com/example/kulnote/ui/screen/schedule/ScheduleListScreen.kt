@@ -7,10 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -18,7 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.kulnote.data.model.MataKuliah
+import com.example.kulnote.data.model.ScheduleInput
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
+import androidx.compose.ui.window.Dialog
 
 private fun formatTime(time: String): String {
     if (time.length != 4) return time
@@ -38,6 +39,7 @@ fun ScheduleListScreen(
     viewModel: ScheduleViewModel
 ) {
     val scheduleList by viewModel.mataKuliahList.collectAsState()
+    var editTarget by remember { mutableStateOf<MataKuliah?>(null) }
 
     // Kelompokkan jadwal berdasarkan hari (sesuai UI)
     val groupedSchedules = scheduleList.groupBy { it.hari }
@@ -84,16 +86,40 @@ fun ScheduleListScreen(
 
                     // Daftar jadwal di hari tersebut
                     items(schedules, key = { it.id }) { schedule ->
-                        ScheduleItemCard(schedule = schedule)
+                        ScheduleItemCard(
+                            schedule = schedule,
+                            onDelete = { viewModel.deleteSchedule(schedule.id) },
+                            onEdit = { editTarget = schedule }
+                        )
                     }
                 }
             }
         }
     }
+
+    editTarget?.let { target ->
+        Dialog(onDismissRequest = { editTarget = null }) {
+            AddScheduleForm(
+                onDismiss = { editTarget = null },
+                initialInput = target.toScheduleInput(),
+                title = "Edit Schedule",
+                confirmLabel = "Update",
+                onSubmit = { input ->
+                    viewModel.updateSchedule(target.id, input)
+                }
+            )
+        }
+    }
 }
 
 @Composable
-fun ScheduleItemCard(schedule: MataKuliah) {
+fun ScheduleItemCard(
+    schedule: MataKuliah,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
     // Format string waktu dan ruangan
     val timeString = "${formatTime(schedule.jamMulai)} - ${formatTime(schedule.jamSelesai)} WIB"
     val detailString = if (schedule.ruangan.isNullOrBlank()) {
@@ -144,6 +170,47 @@ fun ScheduleItemCard(schedule: MataKuliah) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant // Warna lebih redup
                 )
             }
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More actions",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Hapus") },
+                        onClick = {
+                            showMenu = false
+                            onDelete()
+                        }
+                    )
+                }
+            }
         }
     }
+}
+
+private fun MataKuliah.toScheduleInput(): ScheduleInput {
+    return ScheduleInput(
+        idMatkul = this.id,
+        namaMatkul = this.namaMatkul,
+        sks = this.sks.toString(),
+        dosen = this.dosen.orEmpty(),
+        hari = this.hari,
+        jamMulai = this.jamMulai.filter { it.isDigit() },
+        jamSelesai = this.jamSelesai.filter { it.isDigit() },
+        ruangan = this.ruangan.orEmpty()
+    )
 }

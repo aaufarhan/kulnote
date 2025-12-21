@@ -36,5 +36,9 @@ interface ScheduleDao {
         if (schedules.isNotEmpty()) insertAll(schedules)
     }
 
+    // New: Hapus jadwal berdasarkan ID
+    @Query("DELETE FROM schedules_table WHERE id = :scheduleId")
+    suspend fun deleteById(scheduleId: String)
+
     // Nanti ditambahkan: delete(), update(), dll.
 }

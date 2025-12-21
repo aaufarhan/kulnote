@@ -7,11 +7,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -85,8 +90,9 @@ fun NoteListScreen(
                         title = note.title,
                         onClick = {
                             navController.navigate("note_content_screen/${note.id}")
-
-                    })
+                        },
+                        onDelete = { noteViewModel.deleteNote(note.id) }
+                    )
                 }
             }
         }
@@ -97,8 +103,11 @@ fun NoteListScreen(
 @Composable
 fun NoteItem(
     title: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -129,8 +138,30 @@ fun NoteItem(
                 text = title,
                 fontWeight = FontWeight.Normal,
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
             )
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = "More actions",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Hapus") },
+                        onClick = {
+                            showMenu = false
+                            onDelete()
+                        }
+                    )
+                }
+            }
         }
     }
 }

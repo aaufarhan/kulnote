@@ -49,6 +49,15 @@ interface ApiService {
     @POST("schedules")
     fun createSchedule(@Body request: ScheduleRequest): Call<ScheduleApiModel>
 
+    @PUT("schedules/{id}")
+    fun updateSchedule(
+        @Path("id") scheduleId: String,
+        @Body request: ScheduleRequest
+    ): Call<ScheduleApiModel>
+
+    @DELETE("schedules/{id}")
+    fun deleteSchedule(@Path("id") scheduleId: String): Call<SimpleResponse>
+
     // 3. ENDPOINT CRUD NOTES
 
     // Mengambil semua notes untuk user (optional filter by matkulId)

@@ -86,8 +86,8 @@ fun AddPageScreen(
     if (showScheduleDialog) {
         Dialog(onDismissRequest = { showScheduleDialog = false }) {
             AddScheduleForm(
-                viewModel = viewModel,
-                onDismiss = { showScheduleDialog = false }
+                onDismiss = { showScheduleDialog = false },
+                onSubmit = { input -> viewModel.saveNewSchedule(input) }
             )
         }
     }
