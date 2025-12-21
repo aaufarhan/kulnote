@@ -1,12 +1,14 @@
 package com.example.kulnote.ui.screen.schedule
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,6 +42,7 @@ fun ScheduleListScreen(
 ) {
     val scheduleList by viewModel.mataKuliahList.collectAsState()
     var editTarget by remember { mutableStateOf<MataKuliah?>(null) }
+    var detailTarget by remember { mutableStateOf<MataKuliah?>(null) }
 
     // Kelompokkan jadwal berdasarkan hari (sesuai UI)
     val groupedSchedules = scheduleList.groupBy { it.hari }
@@ -88,6 +91,7 @@ fun ScheduleListScreen(
                     items(schedules, key = { it.id }) { schedule ->
                         ScheduleItemCard(
                             schedule = schedule,
+                            onClick = { detailTarget = schedule },
                             onDelete = { viewModel.deleteSchedule(schedule.id) },
                             onEdit = { editTarget = schedule }
                         )
@@ -110,11 +114,27 @@ fun ScheduleListScreen(
             )
         }
     }
+
+    detailTarget?.let { target ->
+        ScheduleDetailDialog(
+            schedule = target,
+            onDismiss = { detailTarget = null },
+            onOpenNotebook = {
+                detailTarget = null
+                navController.navigate("note_list_screen/${target.id}")
+            },
+            onEdit = {
+                detailTarget = null
+                editTarget = target
+            }
+        )
+    }
 }
 
 @Composable
 fun ScheduleItemCard(
     schedule: MataKuliah,
+    onClick: () -> Unit,
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
@@ -122,7 +142,7 @@ fun ScheduleItemCard(
 
     // Format string waktu dan ruangan
     val timeString = "${formatTime(schedule.jamMulai)} - ${formatTime(schedule.jamSelesai)} WIB"
-    val detailString = if (schedule.ruangan.isNullOrBlank()) {
+    val detailString = if (!schedule.ruangan.isNullOrBlank()) {
         "$timeString, ${schedule.ruangan}"
     } else {
         timeString
@@ -131,7 +151,8 @@ fun ScheduleItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp), // Beri jarak antar card
+            .padding(vertical = 8.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             // Gunakan surface agar warnanya konsisten (Putih/Hitam)
@@ -213,4 +234,79 @@ private fun MataKuliah.toScheduleInput(): ScheduleInput {
         jamSelesai = this.jamSelesai.filter { it.isDigit() },
         ruangan = this.ruangan.orEmpty()
     )
+}
+
+@Composable
+private fun ScheduleDetailDialog(
+    schedule: MataKuliah,
+    onDismiss: () -> Unit,
+    onOpenNotebook: () -> Unit,
+    onEdit: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 10.dp,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Lecture",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = schedule.namaMatkul,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                DetailItem(label = "Time", value = "${formatTime(schedule.jamMulai)} - ${formatTime(schedule.jamSelesai)} WIB")
+                DetailItem(label = "SKS", value = schedule.sks.toString())
+                DetailItem(label = "Room", value = schedule.ruangan.orEmpty())
+                DetailItem(label = "Lecturer", value = schedule.dosen.orEmpty())
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(onClick = onOpenNotebook, modifier = Modifier.weight(1f)) {
+                        Text("Open Notebook")
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FilledIconButton(onClick = onEdit) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit schedule"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailItem(label: String, value: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = if (value.isNotBlank()) value else "-",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }
