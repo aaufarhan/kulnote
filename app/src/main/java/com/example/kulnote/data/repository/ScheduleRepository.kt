@@ -2,20 +2,25 @@
 
 package com.example.kulnote.data.repository
 
+import android.content.Context
 import com.example.kulnote.data.local.dao.ScheduleDao
-import com.example.kulnote.data.network.ApiService
-import com.example.kulnote.data.model.network.ScheduleRequest
 import com.example.kulnote.data.local.model.ScheduleEntity
 import com.example.kulnote.data.model.network.ScheduleApiModel
-import kotlinx.coroutines.flow.Flow
+import com.example.kulnote.data.model.network.ScheduleRequest
+import com.example.kulnote.data.network.ApiService
+import com.example.kulnote.data.network.SessionManager
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import retrofit2.awaitResponse
 
 class ScheduleRepository(
     private val apiService: ApiService,
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    context: Context
 ) {
+
+    private val scheduler = ScheduleAlarmScheduler(context)
 
     // 1. READ: Aliran data utama dari Room (Offline-First)
     fun getSchedulesFlow(userId: String? = null): Flow<List<ScheduleEntity>> {
@@ -44,6 +49,10 @@ class ScheduleRepository(
                     // REPLACE ALL: Hapus seluruh jadwal lokal lalu simpan entri baru (atomik)
                     scheduleDao.replaceAll(entities)
                     android.util.Log.d("ScheduleRepository", "💾 Disimpan ke Room: ${entities.size} jadwal (replaced)")
+
+                    // Jadwalkan notifikasi 30 menit sebelum mulai untuk user aktif
+                    val currentUserId = SessionManager.currentUserId.value
+                    entities.filter { it.userId == currentUserId }.forEach { scheduler.schedule(it) }
                 } else {
                     // Handle network error/unauthorized (misal: log error)
                     val errorBody = response.errorBody()?.string()
@@ -125,6 +134,7 @@ class ScheduleRepository(
                 }
 
                 scheduleDao.deleteById(scheduleId)
+                scheduler.cancel(scheduleId)
                 android.util.Log.d("ScheduleRepository", "✅ Jadwal dihapus dari lokal")
             } catch (e: Exception) {
                 android.util.Log.e("ScheduleRepository", "❌ Delete Error: ${e.message}", e)
