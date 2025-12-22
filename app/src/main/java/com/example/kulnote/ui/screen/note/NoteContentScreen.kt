@@ -335,7 +335,12 @@ fun NoteContentScreen(
             itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
                 when (item) {
                     is NoteContentItem.Text -> {
-                        var textValueState by remember { mutableStateOf(TextFieldValue(item.text, TextRange(item.text.length))) }
+                        var textValueState by remember(item) { mutableStateOf(TextFieldValue(item.text, TextRange(item.text.length))) }
+                        LaunchedEffect(item.text) {
+                            if (textValueState.text != item.text) {
+                                textValueState = TextFieldValue(item.text, TextRange(item.text.length))
+                            }
+                        }
                         TextField(
                             value = textValueState,
                             onValueChange = { newValue ->
