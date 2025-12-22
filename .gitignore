@@ -16,6 +16,7 @@ keystore.properties
 .env
 .env.*
 *.env
+app/src/main/java/com/example/kulnote/data/network/ApiClient.kt
 
 # Keystores and signing
 *.jks
