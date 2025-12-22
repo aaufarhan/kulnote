@@ -1,29 +1,48 @@
 package com.example.kulnote.data.viewmodel
 
-import androidx.lifecycle.ViewModel
-import com.example.kulnote.data.model.Reminder
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.kulnote.data.local.db.AppDatabase
+import com.example.kulnote.data.network.ApiClient
+import com.example.kulnote.data.repository.ReminderRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import com.example.kulnote.data.model.ReminderInput
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import java.util.UUID
 
-class ReminderViewModel : ViewModel() {
-    private val _reminderList = MutableStateFlow<List<Reminder>>(emptyList())
-    val reminderList: StateFlow<List<Reminder>> = _reminderList.asStateFlow()
+class ReminderViewModel(application: Application) : AndroidViewModel(application) {
 
-    fun saveNewReminder(input: ReminderInput) {
-        if (input.subject.isBlank() || input.date.isBlank() || input.time.isBlank()) return
+    private val database = AppDatabase.getDatabase(application)
+    private val repository = ReminderRepository(
+        apiService = ApiClient.apiService,
+        reminderDao = database.reminderDao(),
+        reminderFileDao = database.reminderFileDao(),
+        context = application
+    )
 
-        val newReminder = Reminder(
-            id = UUID.randomUUID().toString(),
-            subject = input.subject,
-            date = input.date,
-            time = input.time,
-            description = input.description
-        )
+    // Mengambil SEMUA data dari Room secara real-time (Flow)
+    val allReminders = repository.allReminders
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-        _reminderList.update { it + newReminder }
+    init {
+        // Otomatis fetch saat VM dibuat
+        fetchReminders()
+    }
+
+    // Fungsi untuk memicu sinkronisasi dari server ke lokal
+    fun fetchReminders() {
+        viewModelScope.launch {
+            repository.refreshReminders()
+        }
+    }
+
+    fun getFilesForReminder(reminderId: String) = repository.getFilesForReminder(reminderId)
+
+    fun saveNewReminder(input: ReminderInput, fileUri: Uri? = null) {
+        viewModelScope.launch {
+            repository.createReminder(input, fileUri)
+        }
     }
 }
