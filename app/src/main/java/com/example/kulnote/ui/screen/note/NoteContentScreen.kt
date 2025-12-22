@@ -48,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.example.kulnote.data.model.NoteContentItem
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
@@ -367,26 +369,46 @@ fun NoteContentScreen(
                     }
                     is NoteContentItem.Image -> {
                         if (item.imageUri != null) {
-                            AsyncImage(
-                                model = Uri.parse(item.imageUri),
+                            var aspectRatio by remember(item.imageUri) { mutableStateOf(4f / 3f) }
+                            SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(Uri.parse(item.imageUri))
+                                    .crossfade(true)
+                                    .listener(
+                                        onSuccess = { _, result ->
+                                            val d = result.drawable
+                                            val w = d.intrinsicWidth.toFloat()
+                                            val h = d.intrinsicHeight.toFloat()
+                                            val ratio = if (w > 0 && h > 0) w / h else null
+                                            if (ratio != null && ratio.isFinite() && ratio > 0f) {
+                                                aspectRatio = ratio
+                                            }
+                                        }
+                                    )
+                                    .build(),
                                 contentDescription = "Note Image",
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxWidth(0.92f)
                                     .padding(vertical = 8.dp)
-                                    .heightIn(max = 250.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
+                                    .aspectRatio(aspectRatio)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Fit
                             )
                         } else if (item.drawableResId != null) {
+                            val painter = painterResource(id = item.drawableResId)
+                            val intrinsic = painter.intrinsicSize
+                            val ratio = if (intrinsic.width > 0 && intrinsic.height > 0) {
+                                intrinsic.width / intrinsic.height
+                            } else 4f / 3f
                             Image(
-                                painter = painterResource(id = item.drawableResId),
+                                painter = painter,
                                 contentDescription = "Note Image",
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxWidth(0.92f)
                                     .padding(vertical = 8.dp)
-                                    .heightIn(max = 250.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
+                                    .aspectRatio(ratio)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Fit
                             )
                         }
                     }
