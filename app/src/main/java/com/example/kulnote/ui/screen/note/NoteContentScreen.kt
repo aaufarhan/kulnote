@@ -1,7 +1,6 @@
 package com.example.kulnote.ui.screen.note
 
 import android.net.Uri
-import android.content.Intent
 import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -10,12 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,7 +30,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -44,15 +37,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import com.example.kulnote.data.model.NoteContentItem
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
@@ -68,16 +64,16 @@ fun NoteContentScreen(
     scheduleViewModel: ScheduleViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    
+
     // Observe note dari noteList StateFlow
     val noteList by noteViewModel.noteList.collectAsState()
-    val note = remember(noteId, noteList) { 
-        noteList.find { it.id == noteId } 
+    val note = remember(noteId, noteList) {
+        noteList.find { it.id == noteId }
     }
-    
+
     // Try to get matkulId from note, if available
     val matkulId = note?.matkulId
-    
+
     // Set current matkul ID once when we know it
     LaunchedEffect(matkulId) {
         if (matkulId != null) {
@@ -87,14 +83,14 @@ fun NoteContentScreen(
             android.util.Log.w("NoteContentScreen", "⚠️ MatkulId is null, waiting for note data...")
         }
     }
-    
+
     var noteTitle by remember { mutableStateOf(note?.title ?: "Judul") }
     val noteContent = remember {
         mutableStateListOf<NoteContentItem>().apply {
             addAll(note?.content ?: listOf(NoteContentItem.Text("")))
         }
     }
-    
+
     // Update title and content when note changes
     LaunchedEffect(note) {
         note?.let {
@@ -133,10 +129,10 @@ fun NoteContentScreen(
             // Upload image to server first
             isUploading = true
             uploadError = null
-            
+
             noteViewModel.viewModelScope.launch {
                 val result = com.example.kulnote.util.FileUploadHelper.uploadImage(context, photoUri!!)
-                
+
                 result.onSuccess { serverUrl ->
                     // Use server URL instead of local URI
                     val newImage = NoteContentItem.Image(
@@ -191,10 +187,10 @@ fun NoteContentScreen(
             // Upload image to server first
             isUploading = true
             uploadError = null
-            
+
             noteViewModel.viewModelScope.launch {
                 val result = com.example.kulnote.util.FileUploadHelper.uploadImage(context, uri)
-                
+
                 result.onSuccess { serverUrl ->
                     // Use server URL instead of local URI
                     val newImage = NoteContentItem.Image(
@@ -235,10 +231,10 @@ fun NoteContentScreen(
             // Upload file to server first
             isUploading = true
             uploadError = null
-            
+
             noteViewModel.viewModelScope.launch {
                 val result = com.example.kulnote.util.FileUploadHelper.uploadDocument(context, uri, fileName)
-                
+
                 result.onSuccess { serverUrl ->
                     // Use server URL instead of local URI
                     val newFile = NoteContentItem.File(
@@ -306,211 +302,436 @@ fun NoteContentScreen(
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp)
             ) {
-            // Title
-            item {
-                TextField(
-                    value = noteTitle,
-                    onValueChange = { noteTitle = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    placeholder = {
-                        Text(
-                            "Judul Catatan",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold
+                // Title
+                item {
+                    TextField(
+                        value = noteTitle,
+                        onValueChange = { noteTitle = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        placeholder = {
+                            Text(
+                                "Judul Catatan",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
-                        )
-                    },
-                    maxLines = 1
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            }
+                        },
+                        maxLines = 1
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
 
-            // Content Items
-            itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
-                when (item) {
-                    is NoteContentItem.Text -> {
-                        var textValueState by remember(item) { mutableStateOf(TextFieldValue(item.text, TextRange(item.text.length))) }
-                        LaunchedEffect(item.text) {
-                            if (textValueState.text != item.text) {
-                                textValueState = TextFieldValue(item.text, TextRange(item.text.length))
+                // Content Items
+                itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
+                    when (item) {
+                        is NoteContentItem.Text -> {
+                            var textValueState by remember(item) { mutableStateOf(TextFieldValue(item.text, TextRange(item.text.length))) }
+                            LaunchedEffect(item.text) {
+                                if (textValueState.text != item.text) {
+                                    textValueState = TextFieldValue(item.text, TextRange(item.text.length))
+                                }
                             }
-                        }
-                        TextField(
-                            value = textValueState,
-                            onValueChange = { newValue ->
-                                textValueState = newValue
-                                item.text = newValue.text
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged { focusState ->
-                                    if (focusState.isFocused) {
-                                        lastFocusedTextFieldIndex = index
-                                        lastTextFieldCursorPosition = textValueState.selection
-                                    }
+                            TextField(
+                                value = textValueState,
+                                onValueChange = { newValue ->
+                                    textValueState = newValue
+                                    item.text = newValue.text
                                 },
-                            textStyle = TextStyle(fontSize = 16.sp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            placeholder = { Text("") }
-                        )
-                    }
-                    is NoteContentItem.Image -> {
-                        var widthFraction by remember(item) { mutableStateOf(item.widthFraction.coerceIn(0.4f, 1f)) }
-                        fun applyWidth(f: Float) {
-                            val clamped = f.coerceIn(0.4f, 1f)
-                            widthFraction = clamped
-                            noteContent[index] = item.copy(widthFraction = clamped)
-                        }
-                        if (item.imageUri != null) {
-                            var aspectRatio by remember(item.imageUri) { mutableStateOf(4f / 3f) }
-                            SubcomposeAsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(Uri.parse(item.imageUri))
-                                    .crossfade(true)
-                                    .listener(
-                                        onSuccess = { _, result ->
-                                            val d = result.drawable
-                                            val w = d.intrinsicWidth.toFloat()
-                                            val h = d.intrinsicHeight.toFloat()
-                                            val ratio = if (w > 0 && h > 0) w / h else null
-                                            if (ratio != null && ratio.isFinite() && ratio > 0f) {
-                                                aspectRatio = ratio
-                                            }
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged { focusState ->
+                                        if (focusState.isFocused) {
+                                            lastFocusedTextFieldIndex = index
+                                            lastTextFieldCursorPosition = textValueState.selection
                                         }
-                                    )
-                                    .build(),
-                                contentDescription = "Note Image",
-                                modifier = Modifier
-                                    .fillMaxWidth(widthFraction)
-                                    .padding(vertical = 8.dp)
-                                    .aspectRatio(aspectRatio)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else if (item.drawableResId != null) {
-                            val painter = painterResource(id = item.drawableResId)
-                            val intrinsic = painter.intrinsicSize
-                            val ratio = if (intrinsic.width > 0 && intrinsic.height > 0) {
-                                intrinsic.width / intrinsic.height
-                            } else 4f / 3f
-                            Image(
-                                painter = painter,
-                                contentDescription = "Note Image",
-                                modifier = Modifier
-                                    .fillMaxWidth(widthFraction)
-                                    .padding(vertical = 8.dp)
-                                    .aspectRatio(ratio)
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Fit
+                                    },
+                                textStyle = TextStyle(fontSize = 16.sp),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                placeholder = { Text("") }
                             )
                         }
+                        is NoteContentItem.Image -> {
+                            var widthFraction by remember(item) { mutableStateOf(item.widthFraction.coerceIn(0.2f, 1f)) }
 
-                        // UI slider untuk mengatur lebar gambar (opsional per gambar)
-                        Slider(
-                            value = widthFraction,
-                            onValueChange = { applyWidth(it) },
-                            valueRange = 0.4f..1.0f,
-                            steps = 5,
-                            modifier = Modifier.fillMaxWidth(0.6f)
-                        )
-                        Text(
-                            text = "Lebar: ${(widthFraction * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    is NoteContentItem.File -> {
-                        FileAttachmentItem(fileName = item.fileName)
-                    }
-                    else -> {
-                        // Handle other types (ImageGroup, etc) if any
-                    }
-                }
-            }
-        }
-
-        // Bottom Sheet
-        if (showBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showBottomSheet = false },
-                sheetState = sheetState
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    BottomSheetOption(
-                        icon = Icons.Default.PhotoCamera,
-                        text = "Take Photo"
-                    ) {
-                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                    }
-                    BottomSheetOption(
-                        icon = Icons.Default.Image,
-                        text = "Add Image"
-                    ) {
-                        pickImageLauncher.launch(
-                            androidx.activity.result.PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            ResizableImage(
+                                imageUri = item.imageUri,
+                                drawableResId = item.drawableResId,
+                                initialWidthFraction = widthFraction,
+                                initialWidthPx = item.widthPx,
+                                initialHeightPx = item.heightPx,
+                                onResizeChange = { newFraction, _, _ ->
+                                    widthFraction = newFraction
+                                },
+                                onResizeEnd = { newFraction, newWidthPx, newHeightPx ->
+                                    widthFraction = newFraction
+                                    noteContent[index] = item.copy(
+                                        widthFraction = newFraction,
+                                        widthPx = newWidthPx,
+                                        heightPx = newHeightPx
+                                    )
+                                },
+                                modifier = Modifier.padding(vertical = 8.dp)
                             )
+
+                            Text(
+                                text = "Lebar: ${(widthFraction * 100).toInt()}%",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        is NoteContentItem.File -> {
+                            FileAttachmentItem(fileName = item.fileName)
+                        }
+                        else -> {
+                            // Handle other types (ImageGroup, etc) if any
+                        }
+                    }
+                }
+            }
+
+            // Bottom Sheet
+            if (showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = { showBottomSheet = false },
+                    sheetState = sheetState
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        BottomSheetOption(
+                            icon = Icons.Default.PhotoCamera,
+                            text = "Take Photo"
+                        ) {
+                            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                        }
+                        BottomSheetOption(
+                            icon = Icons.Default.Image,
+                            text = "Add Image"
+                        ) {
+                            pickImageLauncher.launch(
+                                androidx.activity.result.PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        }
+                        BottomSheetOption(
+                            icon = Icons.Default.AttachFile,
+                            text = "Attach File"
+                        ) {
+                            pickFileLauncher.launch(arrayOf("*/*"))
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+                }
+            }
+
+            // Upload Progress Overlay
+            if (isUploading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .zIndex(10f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "Uploading...",
+                            color = Color.White,
+                            fontSize = 16.sp
                         )
                     }
-                    BottomSheetOption(
-                        icon = Icons.Default.AttachFile,
-                        text = "Attach File"
-                    ) {
-                        pickFileLauncher.launch(arrayOf("*/*"))
-                    }
-                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
+
+            // Upload Error Snackbar
+            uploadError?.let { error ->
+                LaunchedEffect(error) {
+                    // Show error for 3 seconds then clear
+                    kotlinx.coroutines.delay(3000)
+                    uploadError = null
                 }
             }
         }
+    }
+}
 
-        // Upload Progress Overlay
-        if (isUploading) {
+// New composable: ResizableImage dengan multi-handle + pinch-to-zoom
+@Composable
+fun ResizableImage(
+    imageUri: String?,
+    drawableResId: Int?,
+    initialWidthFraction: Float,
+    initialWidthPx: Int,
+    initialHeightPx: Int,
+    onResizeChange: (Float, Int, Int) -> Unit = { _, _, _ -> },
+    onResizeEnd: (Float, Int, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    var widthFraction by remember { mutableStateOf(initialWidthFraction.coerceIn(0.2f, 1f)) }
+    var widthPx by remember { mutableStateOf(initialWidthPx.coerceAtLeast(200)) }
+    var heightPx by remember { mutableStateOf(initialHeightPx.coerceAtLeast(200)) }
+    var aspectRatio by remember { mutableStateOf(widthPx.toFloat() / heightPx.toFloat()) }
+    var imageWidthPx by remember { mutableStateOf(1f) }
+
+    fun applyScale(scale: Float) {
+        val coercedScale = scale.coerceIn(0.4f, 2.5f)
+        val newWidthFraction = (widthFraction * coercedScale).coerceIn(0.2f, 1f)
+        val appliedScale = if (widthFraction > 0f) newWidthFraction / widthFraction else 1f
+        widthFraction = newWidthFraction
+        widthPx = (widthPx * appliedScale).toInt().coerceAtLeast(120)
+        heightPx = (heightPx * appliedScale).toInt().coerceAtLeast(120)
+        aspectRatio = widthPx.toFloat() / heightPx.toFloat()
+        onResizeChange(widthFraction, widthPx, heightPx)
+    }
+
+    fun applyWidthDelta(deltaX: Float) {
+        val deltaFraction = if (imageWidthPx > 0f) deltaX / imageWidthPx else 0f
+        val newWidthFraction = (widthFraction + deltaFraction).coerceIn(0.2f, 1f)
+        if (newWidthFraction != widthFraction) {
+            val oldFraction = widthFraction
+            widthFraction = newWidthFraction
+            // Ubah lebar saja, tinggi tetap (mengubah aspect ratio sesuai permintaan)
+            val scaleFactor = if (widthPx > 0 && oldFraction > 0f) newWidthFraction / oldFraction else 1f
+            widthPx = (widthPx * scaleFactor).toInt().coerceAtLeast(120)
+            aspectRatio = widthPx.toFloat() / heightPx.toFloat()
+            onResizeChange(widthFraction, widthPx, heightPx)
+        }
+    }
+
+    fun applyHeightDelta(deltaY: Float) {
+        val newHeightPx = (heightPx + deltaY).toInt().coerceIn(120, 4000)
+        if (newHeightPx != heightPx) {
+            heightPx = newHeightPx
+            aspectRatio = widthPx.toFloat() / heightPx.toFloat()
+            onResizeChange(widthFraction, widthPx, heightPx)
+        }
+    }
+
+    fun applyCornerDelta(deltaX: Float, deltaY: Float) {
+        val baseWidth = imageWidthPx.coerceAtLeast(1f)
+        val scaleFromX = 1f + (deltaX / baseWidth)
+        val baseHeight = baseWidth / aspectRatio
+        val scaleFromY = if (baseHeight > 0f) 1f + (deltaY / baseHeight) else 1f
+        val scale = ((scaleFromX + scaleFromY) / 2f).coerceIn(0.4f, 2.5f)
+        applyScale(scale)
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectTransformGestures { _, _, zoom, _ ->
+                    if (zoom != 1f) {
+                        applyScale(zoom)
+                        onResizeEnd(widthFraction, widthPx, heightPx)
+                    }
+                }
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(widthFraction)
+                .clip(RoundedCornerShape(12.dp))
+                .onGloballyPositioned { coordinates ->
+                    imageWidthPx = coordinates.size.width.toFloat()
+                }
+                .background(Color.Transparent)
+        ) {
+            if (imageUri != null) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(Uri.parse(imageUri))
+                        .crossfade(true)
+                        .listener(onSuccess = { _, result ->
+                            val d = result.drawable
+                            val w = d.intrinsicWidth.toFloat()
+                            val h = d.intrinsicHeight.toFloat()
+                            val ratio = if (w > 0 && h > 0) w / h else null
+                            if (ratio != null && ratio.isFinite() && ratio > 0f) {
+                                aspectRatio = ratio
+                            }
+                        })
+                        .build(),
+                    contentDescription = "Note Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(aspectRatio)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
+                )
+            } else if (drawableResId != null) {
+                val painter = painterResource(id = drawableResId)
+                val intrinsic = painter.intrinsicSize
+                val ratio = if (intrinsic.width > 0 && intrinsic.height > 0) {
+                    intrinsic.width / intrinsic.height
+                } else 4f / 3f
+                aspectRatio = ratio
+                Image(
+                    painter = painter,
+                    contentDescription = "Note Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(aspectRatio)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            // Border overlay
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .zIndex(10f),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                    Text(
-                        "Uploading...",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
-            }
-        }
+                    .matchParentSize()
+                    .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+            )
 
-        // Upload Error Snackbar
-        uploadError?.let { error ->
-            LaunchedEffect(error) {
-                // Show error for 3 seconds then clear
-                kotlinx.coroutines.delay(3000)
-                uploadError = null
-                }
+            // Overlay untuk handle multi-sisi & sudut
+            Box(modifier = Modifier.matchParentSize()) {
+                val handleSize = 16.dp
+                val cornerOffset = 6.dp
+
+                // Kiri
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(handleSize)
+                        .offset(x = (-cornerOffset)),
+                    onDrag = { delta -> applyWidthDelta(delta.x) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize kiri"
+                )
+
+                // Kanan
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(handleSize)
+                        .offset(x = cornerOffset),
+                    onDrag = { delta -> applyWidthDelta(delta.x) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize kanan"
+                )
+
+                // Atas
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .size(handleSize)
+                        .offset(y = (-cornerOffset)),
+                    onDrag = { delta -> applyHeightDelta(delta.y) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize atas"
+                )
+
+                // Bawah
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .size(handleSize)
+                        .offset(y = cornerOffset),
+                    onDrag = { delta -> applyHeightDelta(delta.y) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize bawah"
+                )
+
+                // Sudut kiri atas
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .size(handleSize)
+                        .offset(x = (-cornerOffset), y = (-cornerOffset)),
+                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize sudut"
+                )
+
+                // Sudut kanan atas
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(handleSize)
+                        .offset(x = cornerOffset, y = (-cornerOffset)),
+                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize sudut"
+                )
+
+                // Sudut kiri bawah
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .size(handleSize)
+                        .offset(x = (-cornerOffset), y = cornerOffset),
+                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize sudut"
+                )
+
+                // Sudut kanan bawah
+                ResizeHandle(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(handleSize)
+                        .offset(x = cornerOffset, y = cornerOffset),
+                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                    tooltip = "Resize sudut"
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun ResizeHandle(
+    modifier: Modifier,
+    onDrag: (Offset) -> Unit,
+    tooltip: String,
+    onDragEnd: () -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { _, dragAmount ->
+                        onDrag(dragAmount)
+                    },
+                    onDragEnd = {
+                        onDrag(Offset.Zero)
+                        onDragEnd()
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+        )
     }
 }
 
