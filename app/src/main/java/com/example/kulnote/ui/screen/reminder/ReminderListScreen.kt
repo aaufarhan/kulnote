@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.example.kulnote.data.local.model.ReminderEntity
 import com.example.kulnote.data.local.model.ReminderFileEntity
+import com.example.kulnote.data.model.ReminderInput
 import com.example.kulnote.data.viewmodel.ReminderViewModel
 import java.io.File
 import java.text.SimpleDateFormat
@@ -43,7 +46,8 @@ fun ReminderListScreen(
     reminderViewModel: ReminderViewModel
 ) {
     val reminders by reminderViewModel.allReminders.collectAsState()
-    var selectedReminder by remember { mutableStateOf<ReminderEntity?>(null) }
+    var detailTarget by remember { mutableStateOf<ReminderEntity?>(null) }
+    var editTarget by remember { mutableStateOf<ReminderEntity?>(null) }
 
     // --- LOGIKA IZIN NOTIFIKASI ---
     val launcher = rememberLauncherForActivityResult(
@@ -101,23 +105,44 @@ fun ReminderListScreen(
                         alpha = dimmedAmount,
                         hasFiles = files.isNotEmpty()
                     ) {
-                        selectedReminder = reminder
+                        detailTarget = reminder
                     }
                 }
             }
         }
     }
 
-    selectedReminder?.let { reminder ->
-        val files by reminderViewModel.getFilesForReminder(reminder.id).collectAsState(initial = emptyList())
-        
-        Dialog(onDismissRequest = { selectedReminder = null }) {
-            ReminderDetailDialog(
-                reminder = reminder,
-                files = files,
-                onDismiss = { selectedReminder = null }
+    editTarget?.let { target ->
+        Dialog(onDismissRequest = { editTarget = null }) {
+            AddReminderForm(
+                onDismiss = { editTarget = null },
+                viewModel = reminderViewModel,
+                initialInput = target.toReminderInput(),
+                title = "Edit Pengingat",
+                confirmLabel = "Update",
+                onSubmit = { input, _ ->
+                    reminderViewModel.updateReminder(target.id, input)
+                }
             )
         }
+    }
+
+    detailTarget?.let { reminder ->
+        val files by reminderViewModel.getFilesForReminder(reminder.id).collectAsState(initial = emptyList())
+
+        ReminderDetailDialog(
+            reminder = reminder,
+            files = files,
+            onDismiss = { detailTarget = null },
+            onEdit = {
+                detailTarget = null
+                editTarget = reminder
+            },
+            onDelete = {
+                detailTarget = null
+                reminderViewModel.deleteReminder(reminder.id)
+            }
+        )
     }
 }
 
@@ -161,8 +186,8 @@ fun ReminderItem(
             }
             if (hasFiles) {
                 Icon(
-                    Icons.Default.AttachFile, 
-                    contentDescription = "Has attachment", 
+                    Icons.Default.AttachFile,
+                    contentDescription = "Has attachment",
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -177,97 +202,118 @@ fun ReminderItem(
 fun ReminderDetailDialog(
     reminder: ReminderEntity,
     files: List<ReminderFileEntity>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val context = LocalContext.current
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(16.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(16.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            Text(
-                text = "Detail Pengingat",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Detail Pengingat",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
 
-            HorizontalDivider()
+                HorizontalDivider()
 
-            DetailRow(label = "Judul", value = reminder.judul)
-            DetailRow(label = "Waktu", value = reminder.waktuReminder)
-            DetailRow(label = "Deskripsi", value = reminder.deskripsi ?: "Tidak ada deskripsi")
-            
-            if (files.isNotEmpty()) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(text = "Lampiran (${files.size})", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    files.forEach { fileEntity ->
-                        Button(
-                            onClick = { 
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW)
-                                    val uri = if (fileEntity.localPath != null) {
-                                        val file = File(fileEntity.localPath)
-                                        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                                    } else {
-                                        Uri.parse(fileEntity.remoteUrl)
+                DetailRow(label = "Judul", value = reminder.judul)
+                DetailRow(label = "Waktu", value = reminder.waktuReminder)
+                DetailRow(label = "Deskripsi", value = reminder.deskripsi ?: "Tidak ada deskripsi")
+
+                if (files.isNotEmpty()) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(text = "Lampiran (${files.size})", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        files.forEach { fileEntity ->
+                            Button(
+                                onClick = {
+                                    try {
+                                        val intent = Intent(Intent.ACTION_VIEW)
+                                        val uri = if (fileEntity.localPath != null) {
+                                            val file = File(fileEntity.localPath)
+                                            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                                        } else {
+                                            Uri.parse(fileEntity.remoteUrl)
+                                        }
+
+                                        intent.setDataAndType(uri, fileEntity.tipeFile)
+                                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(fileEntity.remoteUrl))
+                                        context.startActivity(browserIntent)
                                     }
-                                    
-                                    intent.setDataAndType(uri, fileEntity.tipeFile)
-                                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(fileEntity.remoteUrl))
-                                    context.startActivity(browserIntent)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = fileEntity.namaFile,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontSize = 13.sp
-                            )
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = fileEntity.namaFile,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            if (checkIfPast(reminder.waktuReminder)) {
-                Surface(
-                    color = Color.Red.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "Jadwal ini sudah terlewati dan notifikasi sudah dikirim.",
-                        color = Color.Red,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(8.dp)
-                    )
+                if (checkIfPast(reminder.waktuReminder)) {
+                    Surface(
+                        color = Color.Red.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "Jadwal ini sudah terlewati.",
+                            color = Color.Red,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(8.dp)
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text("Tutup", fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Edit")
+                    }
+
+                    FilledIconButton(
+                        onClick = onDelete,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Hapus")
+                    }
                 }
             }
         }
@@ -294,4 +340,12 @@ fun checkIfPast(waktuReminder: String): Boolean {
     } catch (e: Exception) {
         false
     }
+}
+
+fun ReminderEntity.toReminderInput(): ReminderInput {
+    val parts = waktuReminder.split(" ")
+    val date = parts.getOrNull(0) ?: ""
+    val fullTime = parts.getOrNull(1) ?: ""
+    val time = if (fullTime.length >= 5) fullTime.substring(0, 5) else fullTime
+    return ReminderInput(judul, date, time, deskripsi ?: "")
 }

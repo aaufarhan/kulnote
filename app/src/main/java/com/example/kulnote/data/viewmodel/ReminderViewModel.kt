@@ -45,4 +45,16 @@ class ReminderViewModel(application: Application) : AndroidViewModel(application
             repository.createReminder(input, fileUri)
         }
     }
+
+    fun updateReminder(reminderId: String, input: ReminderInput) {
+        viewModelScope.launch {
+            repository.updateReminder(reminderId, input)
+        }
+    }
+
+    fun deleteReminder(reminderId: String) {
+        viewModelScope.launch {
+            repository.deleteReminder(reminderId)
+        }
+    }
 }

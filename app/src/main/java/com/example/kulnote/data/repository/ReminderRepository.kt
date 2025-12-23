@@ -200,4 +200,36 @@ class ReminderRepository(
         createdAt = createdAt,
         updatedAt = updatedAt
     )
+
+    suspend fun updateReminder(reminderId: String, input: ReminderInput) {
+        try {
+            val request = ReminderRequest(
+                jenisReminder = input.subject,
+                tanggal = input.date,
+                jam = if (input.time.length == 5) "${input.time}:00" else input.time,
+                keterangan = input.description
+            )
+            val response = apiService.updateReminder(reminderId, request)
+            if (response.isSuccessful && response.body()?.data != null) {
+                val updatedReminder = response.body()!!.data!!
+                val entity = updatedReminder.toEntity()
+                reminderDao.insert(entity) // Room akan me-replace karena ID sama
+                alarmScheduler.schedule(entity) // Update alarm ke waktu baru
+            }
+        } catch (e: Exception) {
+            Log.e("ReminderRepo", "Error update: ${e.message}")
+        }
+    }
+
+    suspend fun deleteReminder(reminderId: String) {
+        try {
+            val response = apiService.deleteReminder(reminderId)
+            if (response.isSuccessful) {
+                reminderDao.deleteById(reminderId)
+                // Opsional: Batalkan alarm jika diperlukan
+            }
+        } catch (e: Exception) {
+            Log.e("ReminderRepo", "Error delete: ${e.message}")
+        }
+    }
 }

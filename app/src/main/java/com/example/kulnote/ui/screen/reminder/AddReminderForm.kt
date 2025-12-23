@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,16 +35,20 @@ import java.util.*
 @Composable
 fun AddReminderForm(
     onDismiss: () -> Unit,
-    viewModel: ReminderViewModel
+    viewModel: ReminderViewModel,
+    initialInput: ReminderInput? = null, // Tambahkan ini
+    title: String = "New Reminder",       // Tambahkan ini
+    confirmLabel: String = "Save",      // Tambahkan ini
+    onSubmit: (ReminderInput, Uri?) -> Unit // Ubah ini
 ) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
 
     // State untuk input
-    var subject by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf("") }
-    var selectedTime by remember { mutableStateOf("") }
+    var subject by remember { mutableStateOf(initialInput?.subject ?: "") }
+    var description by remember { mutableStateOf(initialInput?.description ?: "") }
+    var selectedDate by remember { mutableStateOf(initialInput?.date ?: "") }
+    var selectedTime by remember { mutableStateOf(initialInput?.time ?: "") }
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var selectedFileName by remember { mutableStateOf("") }
 
@@ -107,7 +113,7 @@ fun AddReminderForm(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "New Reminder",
+                text = title,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -243,7 +249,7 @@ fun AddReminderForm(
 
                 Button(
                     onClick = {
-                        viewModel.saveNewReminder(
+                        onSubmit(
                             ReminderInput(subject, selectedDate, selectedTime, description),
                             selectedFileUri
                         )
@@ -252,7 +258,7 @@ fun AddReminderForm(
                     enabled = isButtonEnabled,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Save")
+                    Text(confirmLabel)
                 }
             }
         }

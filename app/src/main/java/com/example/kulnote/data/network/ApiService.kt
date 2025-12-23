@@ -60,6 +60,15 @@ interface ApiService {
     @POST("reminders")
     suspend fun createReminder(@Body request: ReminderRequest): Response<ReminderResponse<ReminderNetworkModel>>
 
+    @PUT("reminders/{id}")
+    suspend fun updateReminder(
+        @Path("id") reminderId: String,
+        @Body request: ReminderRequest
+    ): Response<ReminderResponse<ReminderNetworkModel>>
+
+    @DELETE("reminders/{id}")
+    suspend fun deleteReminder(@Path("id") reminderId: String): Response<SimpleResponse>
+
     @GET("reminders/{id}/files")
     suspend fun getReminderFiles(@Path("id") reminderId: String): Response<ReminderResponse<List<FileApiModel>>>
 

@@ -104,11 +104,14 @@ fun AddPageScreen(
     }
     // ====== POP-UP ADD REMINDER ======
     if (showReminderDialog) {
-        // TAMBAHKAN Dialog di sini agar konsisten dengan yang lain
         Dialog(onDismissRequest = { showReminderDialog = false }) {
             AddReminderForm(
                 viewModel = reminderViewModel,
-                onDismiss = { showReminderDialog = false }
+                onDismiss = { showReminderDialog = false },
+                // Tambahkan onSubmit di sini:
+                onSubmit = { input, fileUri ->
+                    reminderViewModel.saveNewReminder(input, fileUri)
+                }
             )
         }
     }
