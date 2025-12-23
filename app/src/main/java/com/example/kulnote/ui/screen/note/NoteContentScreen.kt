@@ -1,7 +1,11 @@
 package com.example.kulnote.ui.screen.note
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.webkit.MimeTypeMap
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,14 +24,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -54,6 +54,7 @@ import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
 import com.example.kulnote.util.ImageUtils
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +114,7 @@ fun NoteContentScreen(
 
     var isUploading by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+    var selectedImageIndex by remember { mutableStateOf<Int?>(null) }
 
     val takePictureLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -323,11 +325,14 @@ fun NoteContentScreen(
                                 onValueChange = { newValue ->
                                     textValueState = newValue
                                     item.text = newValue.text
+                                    lastFocusedTextFieldIndex = index
+                                    lastTextFieldCursorPosition = newValue.selection
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .onFocusChanged { focusState ->
                                         if (focusState.isFocused) {
+                                            selectedImageIndex = null
                                             lastFocusedTextFieldIndex = index
                                             lastTextFieldCursorPosition = textValueState.selection
                                         }
@@ -351,6 +356,10 @@ fun NoteContentScreen(
                                 initialWidthFraction = widthFraction,
                                 initialWidthPx = item.widthPx,
                                 initialHeightPx = item.heightPx,
+                                isSelected = selectedImageIndex == index,
+                                onSelect = {
+                                    selectedImageIndex = if (selectedImageIndex == index) null else index
+                                },
                                 onResizeChange = { newFraction, _, _ ->
                                     widthFraction = newFraction
                                 },
@@ -362,6 +371,11 @@ fun NoteContentScreen(
                                         heightPx = newHeightPx
                                     )
                                 },
+                                onDelete = {
+                                    selectedImageIndex = null
+                                    noteContent.removeAt(index)
+                                    noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
+                                },
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
 
@@ -372,7 +386,17 @@ fun NoteContentScreen(
                             )
                         }
                         is NoteContentItem.File -> {
-                            FileAttachmentItem(fileName = item.fileName)
+                            var showMenu by remember(item) { mutableStateOf(false) }
+                            FileAttachmentItem(
+                                fileName = item.fileName,
+                                onOpen = { openFileWithChooser(context, item.fileUri) },
+                                onDelete = {
+                                    noteContent.removeAt(index)
+                                    noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
+                                },
+                                isMenuOpen = showMenu,
+                                onMenuToggle = { showMenu = it }
+                            )
                         }
                         else -> {
                         }
@@ -451,8 +475,11 @@ fun ResizableImage(
     initialWidthFraction: Float,
     initialWidthPx: Int,
     initialHeightPx: Int,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
     onResizeChange: (Float, Int, Int) -> Unit = { _, _, _ -> },
     onResizeEnd: (Float, Int, Int) -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -525,6 +552,7 @@ fun ResizableImage(
                     imageWidthPx = coordinates.size.width.toFloat()
                 }
                 .background(Color.Transparent)
+                .clickable { onSelect() }
         ) {
             if (imageUri != null) {
                 SubcomposeAsyncImage(
@@ -565,96 +593,107 @@ fun ResizableImage(
                     contentScale = ContentScale.Fit
                 )
             }
-
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
-            )
-
-            Box(modifier = Modifier.matchParentSize()) {
-                val handleSize = 16.dp
-                val cornerOffset = 6.dp
-
-                ResizeHandle(
+            if (isSelected) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .size(handleSize)
-                        .offset(x = (-cornerOffset)),
-                    onDrag = { delta -> applyWidthDelta(delta.x) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize kiri"
+                        .matchParentSize()
+                        .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
                 )
 
-                ResizeHandle(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(handleSize)
-                        .offset(x = cornerOffset),
-                    onDrag = { delta -> applyWidthDelta(delta.x) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize kanan"
-                )
-
-                ResizeHandle(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .size(handleSize)
-                        .offset(y = (-cornerOffset)),
-                    onDrag = { delta -> applyHeightDelta(delta.y) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize atas"
-                )
-
-                ResizeHandle(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .size(handleSize)
-                        .offset(y = cornerOffset),
-                    onDrag = { delta -> applyHeightDelta(delta.y) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize bawah"
-                )
-
-                ResizeHandle(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .size(handleSize)
-                        .offset(x = (-cornerOffset), y = (-cornerOffset)),
-                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize sudut"
-                )
-
-                ResizeHandle(
+                IconButton(
+                    onClick = onDelete,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .size(handleSize)
-                        .offset(x = cornerOffset, y = (-cornerOffset)),
-                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize sudut"
-                )
+                        .padding(8.dp)
+                        .size(32.dp)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Delete image")
+                }
 
-                ResizeHandle(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .size(handleSize)
-                        .offset(x = (-cornerOffset), y = cornerOffset),
-                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize sudut"
-                )
+                Box(modifier = Modifier.matchParentSize()) {
+                    val handleSize = 16.dp
+                    val cornerOffset = 6.dp
 
-                ResizeHandle(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(handleSize)
-                        .offset(x = cornerOffset, y = cornerOffset),
-                    onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
-                    onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
-                    tooltip = "Resize sudut"
-                )
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .size(handleSize)
+                            .offset(x = (-cornerOffset)),
+                        onDrag = { delta -> applyWidthDelta(delta.x) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize kiri"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(handleSize)
+                            .offset(x = cornerOffset),
+                        onDrag = { delta -> applyWidthDelta(delta.x) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize kanan"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .size(handleSize)
+                            .offset(y = (-cornerOffset)),
+                        onDrag = { delta -> applyHeightDelta(delta.y) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize atas"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .size(handleSize)
+                            .offset(y = cornerOffset),
+                        onDrag = { delta -> applyHeightDelta(delta.y) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize bawah"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .size(handleSize)
+                            .offset(x = (-cornerOffset), y = (-cornerOffset)),
+                        onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize sudut"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(handleSize)
+                            .offset(x = cornerOffset, y = (-cornerOffset)),
+                        onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize sudut"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .size(handleSize)
+                            .offset(x = (-cornerOffset), y = cornerOffset),
+                        onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize sudut"
+                    )
+
+                    ResizeHandle(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(handleSize)
+                            .offset(x = cornerOffset, y = cornerOffset),
+                        onDrag = { delta -> applyCornerDelta(delta.x, delta.y) },
+                        onDragEnd = { onResizeEnd(widthFraction, widthPx, heightPx) },
+                        tooltip = "Resize sudut"
+                    )
+                }
             }
         }
     }
@@ -694,13 +733,20 @@ private fun ResizeHandle(
 }
 
 @Composable
-fun FileAttachmentItem(fileName: String) {
+fun FileAttachmentItem(
+    fileName: String,
+    onOpen: () -> Unit,
+    onDelete: () -> Unit,
+    isMenuOpen: Boolean,
+    onMenuToggle: (Boolean) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-            .padding(12.dp),
+            .clickable(onClick = onOpen)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -713,8 +759,31 @@ fun FileAttachmentItem(fileName: String) {
             text = fileName,
             fontSize = 14.sp,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
         )
+        IconButton(onClick = { onMenuToggle(true) }) {
+            Icon(Icons.Default.MoreVert, contentDescription = "More")
+        }
+        DropdownMenu(
+            expanded = isMenuOpen,
+            onDismissRequest = { onMenuToggle(false) }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Open") },
+                onClick = {
+                    onMenuToggle(false)
+                    onOpen()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Delete") },
+                onClick = {
+                    onMenuToggle(false)
+                    onDelete()
+                }
+            )
+        }
     }
 }
 
@@ -767,5 +836,27 @@ fun insertContentItem(
         if (newItem !is NoteContentItem.Text) {
             contentList.add(index + 2, NoteContentItem.Text(""))
         }
+    }
+}
+
+private fun openFileWithChooser(context: Context, uriString: String?) {
+    if (uriString.isNullOrBlank()) return
+
+    val uri = Uri.parse(uriString)
+    val mimeType = context.contentResolver.getType(uri)
+        ?: MimeTypeMap.getFileExtensionFromUrl(uriString)
+            ?.lowercase(Locale.ROOT)
+            ?.let { MimeTypeMap.getSingleton().getMimeTypeFromExtension(it) }
+        ?: "*/*"
+
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(uri, mimeType)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    val chooser = Intent.createChooser(intent, "Open with")
+    try {
+        context.startActivity(chooser)
+    } catch (_: ActivityNotFoundException) {
     }
 }
