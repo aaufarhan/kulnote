@@ -47,13 +47,9 @@ class ReminderRepository(
                 val reminders = response.body()?.data ?: emptyList()
                 val entities = reminders.map { it.toEntity() }
 
-                // Opsional: Hapus data lama milik user ini sebelum insert yang baru (clean sync)
-                // reminderDao.deleteByUserId(currentUserId)
-
                 reminderDao.insertAll(entities)
 
                 entities.forEach { entity ->
-                    // Pastikan hanya menjadwalkan alarm jika userId-nya cocok
                     if (entity.userId == currentUserId) {
                         alarmScheduler.schedule(entity)
                     }
@@ -115,7 +111,6 @@ class ReminderRepository(
                 val entity = newReminder.toEntity()
                 reminderDao.insert(entity)
 
-                // Jadwalkan alarm untuk reminder baru
                 alarmScheduler.schedule(entity)
 
                 if (fileUri != null) {
@@ -213,8 +208,8 @@ class ReminderRepository(
             if (response.isSuccessful && response.body()?.data != null) {
                 val updatedReminder = response.body()!!.data!!
                 val entity = updatedReminder.toEntity()
-                reminderDao.insert(entity) // Room akan me-replace karena ID sama
-                alarmScheduler.schedule(entity) // Update alarm ke waktu baru
+                reminderDao.insert(entity)
+                alarmScheduler.schedule(entity)
             }
         } catch (e: Exception) {
             Log.e("ReminderRepo", "Error update: ${e.message}")
@@ -226,7 +221,6 @@ class ReminderRepository(
             val response = apiService.deleteReminder(reminderId)
             if (response.isSuccessful) {
                 reminderDao.deleteById(reminderId)
-                // Opsional: Batalkan alarm jika diperlukan
             }
         } catch (e: Exception) {
             Log.e("ReminderRepo", "Error delete: ${e.message}")

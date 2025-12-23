@@ -53,7 +53,6 @@ fun AddPageScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // ===== Tombol Add Schedule =====
         AddPageCard(
             icon = R.drawable.ic_schedule_active,
             title = "Add Schedule"
@@ -82,7 +81,6 @@ fun AddPageScreen(
         Spacer(modifier = Modifier.height(20.dp))
     }
 
-    // ====== POP-UP ADD SCHEDULE ======
     if (showScheduleDialog) {
         Dialog(onDismissRequest = { showScheduleDialog = false }) {
             AddScheduleForm(
@@ -91,7 +89,6 @@ fun AddPageScreen(
             )
         }
     }
-    // ====== POP-UP ADD NOTE ======
     if (showNoteDialog) {
         Dialog(onDismissRequest = { showNoteDialog = false }) {
             AddNoteForm(
@@ -102,13 +99,11 @@ fun AddPageScreen(
             )
         }
     }
-    // ====== POP-UP ADD REMINDER ======
     if (showReminderDialog) {
         Dialog(onDismissRequest = { showReminderDialog = false }) {
             AddReminderForm(
                 viewModel = reminderViewModel,
                 onDismiss = { showReminderDialog = false },
-                // Tambahkan onSubmit di sini:
                 onSubmit = { input, fileUri ->
                     reminderViewModel.saveNewReminder(input, fileUri)
                 }

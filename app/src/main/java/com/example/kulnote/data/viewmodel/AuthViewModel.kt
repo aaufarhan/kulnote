@@ -1,5 +1,3 @@
-// FILE: AuthViewModel.kt
-
 package com.example.kulnote.data.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -12,10 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class AuthViewModel : ViewModel() {
 
-    // Inisialisasi Repository dengan ApiService dari ApiClient
     private val repository = AuthRepository(ApiClient.apiService)
 
-    // State untuk UI
     private val _isLoggedIn = MutableStateFlow(false)
     val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
 
@@ -25,11 +21,8 @@ class AuthViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // NEW: expose currentUserId so other parts can observe
     private val _currentUserId = MutableStateFlow<String?>(null)
     val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
-
-    // Nanti: Anda harus menyimpan token ke DataStore/SharedPreferences di sini
 
     fun attemptLogin(email: String, password: String) {
         _isLoading.value = true
@@ -54,7 +47,6 @@ class AuthViewModel : ViewModel() {
     }
 
     fun attemptRegister(nama: String, email: String, password: String) {
-        // Implementasi register (mirip dengan login)
         _isLoading.value = true
         _error.value = null
 

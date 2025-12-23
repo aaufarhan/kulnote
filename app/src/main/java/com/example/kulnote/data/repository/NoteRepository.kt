@@ -22,7 +22,6 @@ class NoteRepository(
     private val noteDao: NoteDao
 ) {
 
-    // 1. READ: Flow dari Room untuk notes per matkul
     fun getNotesForMatkul(matkulId: String): Flow<List<Note>> {
         return noteDao.getNotesForMatkul(matkulId)
             .map { entities ->
@@ -30,7 +29,6 @@ class NoteRepository(
             }
     }
 
-    // 2. REFRESH: Ambil dari server, simpan ke Room
     suspend fun refreshNotes(matkulId: String) {
         withContext(Dispatchers.IO) {
             try {
@@ -45,10 +43,8 @@ class NoteRepository(
                     val apiData = noteResponse?.data ?: emptyList()
                     Log.d("NoteRepository", "📊 Data diterima: ${apiData.size} notes")
 
-                    // Konversi ApiModel ke Entity Room
                     val entities = apiData.map { it.toEntity() }
 
-                    // REPLACE ALL: Hapus notes lama untuk matkul ini, simpan yang baru
                     noteDao.replaceAllForMatkul(matkulId, entities)
                     Log.d("NoteRepository", "💾 Disimpan ke Room: ${entities.size} notes")
                 } else {
@@ -63,7 +59,6 @@ class NoteRepository(
         }
     }
 
-    // 3. CREATE: Simpan ke server, langsung insert ke Room
     suspend fun createNote(request: NoteRequest): String {
         return withContext(Dispatchers.IO) {
             try {
@@ -84,12 +79,10 @@ class NoteRepository(
                     ?: throw Exception("Note data is null")
                 Log.d("NoteRepository", "✅ Note tersimpan di server: $savedNote")
 
-                // Langsung insert ke Room untuk akses instant
                 val entity = savedNote.toEntity()
                 noteDao.insert(entity)
                 Log.d("NoteRepository", "💾 Note langsung disimpan ke Room")
                 
-                // Return note ID
                 savedNote.id
             } catch (e: Exception) {
                 Log.e("NoteRepository", "❌ Create Error: ${e.message}", e)
@@ -98,7 +91,6 @@ class NoteRepository(
         }
     }
 
-    // 4. UPDATE: Update di server, refresh lokal
     suspend fun updateNote(noteId: String, request: NoteRequest) {
         withContext(Dispatchers.IO) {
             try {
@@ -116,7 +108,6 @@ class NoteRepository(
 
                 Log.d("NoteRepository", "✅ Note berhasil diupdate")
 
-                // Refresh data lokal
                 refreshNotes(request.idJadwal)
             } catch (e: Exception) {
                 Log.e("NoteRepository", "❌ Update Error: ${e.message}", e)
@@ -125,7 +116,6 @@ class NoteRepository(
         }
     }
 
-    // 5. DELETE: Hapus dari server, refresh lokal
     suspend fun deleteNote(noteId: String, matkulId: String) {
         withContext(Dispatchers.IO) {
             try {
@@ -143,7 +133,6 @@ class NoteRepository(
 
                 Log.d("NoteRepository", "✅ Note berhasil dihapus")
 
-                // Hapus dari lokal juga
                 noteDao.deleteById(noteId)
             } catch (e: Exception) {
                 Log.e("NoteRepository", "❌ Delete Error: ${e.message}", e)
@@ -153,17 +142,11 @@ class NoteRepository(
     }
 }
 
-// ========================================
-// EXTENSION FUNCTIONS - MAPPING/CONVERSION
-// ========================================
-
-// Konversi NoteApiModel (dari server) ke NoteEntity (Room)
 fun NoteApiModel.toEntity(): NoteEntity {
-    // Serialize contentJson ke JSON string
     val contentJsonString = try {
         Gson().toJson(this.contentJson ?: emptyList<ContentItemJson>())
     } catch (e: Exception) {
-        "[]" // Fallback ke empty array
+        "[]"
     }
 
     return NoteEntity(
@@ -176,7 +159,6 @@ fun NoteApiModel.toEntity(): NoteEntity {
     )
 }
 
-// Konversi NoteEntity (Room) ke Note (UI Model)
 fun NoteEntity.toUiModel(): Note {
     return Note(
         id = this.id,
@@ -187,7 +169,6 @@ fun NoteEntity.toUiModel(): Note {
     )
 }
 
-// Parse JSON string ke List<NoteContentItem>
 fun parseContentFromJson(json: String?): List<NoteContentItem> {
     if (json.isNullOrBlank() || json == "[]") {
         return listOf(NoteContentItem.Text(""))
@@ -198,35 +179,32 @@ fun parseContentFromJson(json: String?): List<NoteContentItem> {
         val type = object : TypeToken<List<ContentItemJson>>() {}.type
         val contentJsonList: List<ContentItemJson> = gson.fromJson(json, type) ?: emptyList()
 
-        // Convert ContentItemJson to NoteContentItem
         contentJsonList.map { it.toNoteContentItem() }
     } catch (e: Exception) {
         Log.e("NoteRepository", "❌ JSON Parse Error: ${e.message}", e)
-        listOf(NoteContentItem.Text(json)) // Fallback: tampilkan sebagai text
+        listOf(NoteContentItem.Text(json))
     }
 }
 
-// Serialize List<NoteContentItem> ke JSON string
 fun serializeContentToJson(content: List<NoteContentItem>): String {
     return try {
         val contentJsonList = content.map { it.toContentItemJson() }
         Gson().toJson(contentJsonList)
     } catch (e: Exception) {
         Log.e("NoteRepository", "❌ JSON Serialize Error: ${e.message}", e)
-        "[]" // Fallback
+        "[]"
     }
 }
 
-// Convert ContentItemJson to NoteContentItem
 fun ContentItemJson.toNoteContentItem(): NoteContentItem {
     return when (this.type.lowercase()) {
         "text" -> NoteContentItem.Text(this.text ?: "")
         "image" -> NoteContentItem.Image(
             drawableResId = this.drawableResId,
             imageUri = this.imageUri,
-            widthPx = this.widthPx ?: 750,  // Default ~250dp @ 3x density (match reference)
-            heightPx = this.heightPx ?: 600,  // Default ~200dp @ 3x density
-            isInline = false // No isInline - images are always block-level (Top & Bottom)
+            widthPx = this.widthPx ?: 750,
+            heightPx = this.heightPx ?: 600,
+            isInline = false
         )
         "file" -> NoteContentItem.File(
             fileName = this.fileName ?: "Unknown File",
@@ -236,11 +214,10 @@ fun ContentItemJson.toNoteContentItem(): NoteContentItem {
             imageUris = this.imageUris ?: emptyList(),
             isInline = this.isInline ?: true
         )
-        else -> NoteContentItem.Text("") // Fallback
+        else -> NoteContentItem.Text("")
     }
 }
 
-// Convert NoteContentItem to ContentItemJson
 fun NoteContentItem.toContentItemJson(): ContentItemJson {
     return when (this) {
         is NoteContentItem.Text -> ContentItemJson(
@@ -251,9 +228,9 @@ fun NoteContentItem.toContentItemJson(): ContentItemJson {
             type = "image",
             drawableResId = this.drawableResId,
             imageUri = this.imageUri,
-            widthPx = this.widthPx,  // ✅ Include size
-            heightPx = this.heightPx, // ✅ Include size
-            isInline = false // Always false - images are block-level
+            widthPx = this.widthPx,
+            heightPx = this.heightPx,
+            isInline = false
         )
         is NoteContentItem.File -> ContentItemJson(
             type = "file",
@@ -268,7 +245,6 @@ fun NoteContentItem.toContentItemJson(): ContentItemJson {
     }
 }
 
-// Convert List<NoteContentItem> to List<ContentItemJson> for API request
 fun List<NoteContentItem>.toContentJsonList(): List<ContentItemJson> {
     return this.map { it.toContentItemJson() }
 }

@@ -36,15 +36,14 @@ import java.util.*
 fun AddReminderForm(
     onDismiss: () -> Unit,
     viewModel: ReminderViewModel,
-    initialInput: ReminderInput? = null, // Tambahkan ini
-    title: String = "New Reminder",       // Tambahkan ini
-    confirmLabel: String = "Save",      // Tambahkan ini
-    onSubmit: (ReminderInput, Uri?) -> Unit // Ubah ini
+    initialInput: ReminderInput? = null,
+    title: String = "New Reminder",
+    confirmLabel: String = "Save",
+    onSubmit: (ReminderInput, Uri?) -> Unit
 ) {
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
 
-    // State untuk input
     var subject by remember { mutableStateOf(initialInput?.subject ?: "") }
     var description by remember { mutableStateOf(initialInput?.description ?: "") }
     var selectedDate by remember { mutableStateOf(initialInput?.date ?: "") }
@@ -52,7 +51,6 @@ fun AddReminderForm(
     var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
     var selectedFileName by remember { mutableStateOf("") }
 
-    // File Picker Launcher
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -68,14 +66,11 @@ fun AddReminderForm(
         }
     }
 
-    // State untuk kontrol Dialog DatePicker
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
 
-    // Logika tombol Save aktif
     val isButtonEnabled = subject.isNotBlank() && selectedDate.isNotBlank() && selectedTime.isNotBlank()
 
-    // Date Picker Dialog logic
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -118,7 +113,6 @@ fun AddReminderForm(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // Input Subject
             OutlinedTextField(
                 value = subject,
                 onValueChange = { subject = it },
@@ -128,7 +122,6 @@ fun AddReminderForm(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Input Tanggal
             Box {
                 OutlinedTextField(
                     value = selectedDate,
@@ -141,7 +134,6 @@ fun AddReminderForm(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
-                // Overlay clickable layer
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -149,7 +141,6 @@ fun AddReminderForm(
                 )
             }
 
-            // Input Jam
             Box {
                 OutlinedTextField(
                     value = selectedTime,
@@ -162,7 +153,6 @@ fun AddReminderForm(
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
-                // Overlay clickable layer
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -174,7 +164,6 @@ fun AddReminderForm(
                 )
             }
 
-            // Input Description
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
@@ -184,7 +173,6 @@ fun AddReminderForm(
                 maxLines = 5
             )
 
-            // File Picker UI
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "Lampiran File",
@@ -228,7 +216,7 @@ fun AddReminderForm(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Remove file",
-                                    modifier = Modifier.size(20.dp) // Set specific size
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }

@@ -18,7 +18,7 @@ class ReminderAlarmScheduler(private val context: Context) {
         val intent = Intent(context, AlarmReceiver::class.java).apply {
             putExtra("REMINDER_TITLE", reminder.judul)
             putExtra("REMINDER_DESC", reminder.deskripsi)
-            putExtra("USER_ID", reminder.userId) // TAMBAHKAN INI
+            putExtra("USER_ID", reminder.userId)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -33,7 +33,6 @@ class ReminderAlarmScheduler(private val context: Context) {
 
         if (timeInMillis > System.currentTimeMillis()) {
             try {
-                // Pengecekan untuk Android 12+ (API 31)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     if (alarmManager.canScheduleExactAlarms()) {
                         alarmManager.setExactAndAllowWhileIdle(
@@ -42,7 +41,6 @@ class ReminderAlarmScheduler(private val context: Context) {
                             pendingIntent
                         )
                     } else {
-                        // Jika tidak boleh exact, gunakan setAndAllowWhileIdle (bisa meleset dikit tapi aman)
                         alarmManager.setAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             timeInMillis,
@@ -51,7 +49,6 @@ class ReminderAlarmScheduler(private val context: Context) {
                         Log.w("AlarmScheduler", "Exact alarm not allowed, using inexact.")
                     }
                 } else {
-                    // Untuk Android lama (di bawah 12)
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         timeInMillis,

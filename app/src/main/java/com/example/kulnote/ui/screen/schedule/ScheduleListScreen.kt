@@ -30,7 +30,7 @@ private fun formatTime(time: String): String {
         val minute = time.substring(2, 4)
         "$hour.$minute"
     } catch (e: Exception) {
-        time // fallback jika format salah
+        time
     }
 }
 
@@ -44,7 +44,6 @@ fun ScheduleListScreen(
     var editTarget by remember { mutableStateOf<MataKuliah?>(null) }
     var detailTarget by remember { mutableStateOf<MataKuliah?>(null) }
 
-    // Kelompokkan jadwal berdasarkan hari (sesuai UI)
     val groupedSchedules = scheduleList.groupBy { it.hari }
 
     Scaffold(
@@ -72,22 +71,18 @@ fun ScheduleListScreen(
                     .padding(innerPadding),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                // Iterasi setiap grup (setiap hari)
                 groupedSchedules.forEach { (day, schedules) ->
-                    // Header untuk hari (misal, "Thursday")
                     item {
                         Text(
                             text = day,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
-                            color = MaterialTheme.colorScheme.onSurface // Pastikan teks terlihat
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        // Garis pemisah seperti di UI
                         Divider()
                     }
 
-                    // Daftar jadwal di hari tersebut
                     items(schedules, key = { it.id }) { schedule ->
                         ScheduleItemCard(
                             schedule = schedule,
@@ -140,7 +135,6 @@ fun ScheduleItemCard(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    // Format string waktu dan ruangan
     val timeString = "${formatTime(schedule.jamMulai)} - ${formatTime(schedule.jamSelesai)} WIB"
     val detailString = if (!schedule.ruangan.isNullOrBlank()) {
         "$timeString, ${schedule.ruangan}"
@@ -155,11 +149,9 @@ fun ScheduleItemCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            // Gunakan surface agar warnanya konsisten (Putih/Hitam)
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        // Tambahkan border tipis seperti di UI
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
     ) {
         Row(
@@ -172,7 +164,7 @@ fun ScheduleItemCard(
                 imageVector = Icons.Default.CalendarToday,
                 contentDescription = "Schedule Icon",
                 modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurface // Pastikan ikon terlihat
+                    tint = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -182,13 +174,13 @@ fun ScheduleItemCard(
                     text = schedule.namaMatkul,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface // Pastikan teks terlihat
+                        color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = detailString,
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant // Warna lebih redup
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Box {

@@ -1,5 +1,3 @@
-// FILE: ApiService.kt
-
 package com.example.kulnote.data.network
 
 import com.example.kulnote.data.model.network.*
@@ -10,15 +8,12 @@ import retrofit2.Response
 import retrofit2.http.*
 
 interface ApiService {
-
-    // 1. ENDPOINT AUTENTIKASI
     @POST("auth/register")
     fun register(@Body request: Map<String, String>): Call<LoginResponse>
 
     @POST("auth/login")
     fun login(@Body request: Map<String, String>): Call<LoginResponse>
 
-    // 2. ENDPOINT CRUD JADWAL KELAS
     @GET("schedules")
     fun getSchedules(): Call<List<ScheduleApiModel>>
 
@@ -34,7 +29,6 @@ interface ApiService {
     @DELETE("schedules/{id}")
     fun deleteSchedule(@Path("id") scheduleId: String): Call<SimpleResponse>
 
-    // 3. ENDPOINT CRUD NOTES
     @GET("notes")
     fun getNotes(@Query("matkulId") matkulId: String? = null): Call<NoteListResponse>
 
@@ -44,16 +38,12 @@ interface ApiService {
     @POST("notes")
     fun createNote(@Body request: NoteRequest): Call<NoteResponse>
 
-    // Update note
     @PUT("notes/{id}")
     fun updateNote(@Path("id") noteId: String, @Body request: NoteRequest): Call<NoteResponse>
 
-    // Hapus note
     @DELETE("notes/{id}")
     fun deleteNote(@Path("id") noteId: String): Call<SimpleResponse>
 
-
-    // 4. ENDPOINT REMINDERS
     @GET("reminders")
     suspend fun getReminders(): Response<ReminderResponse<List<ReminderNetworkModel>>>
 
@@ -72,8 +62,6 @@ interface ApiService {
     @GET("reminders/{id}/files")
     suspend fun getReminderFiles(@Path("id") reminderId: String): Response<ReminderResponse<List<FileApiModel>>>
 
-    // === FILE UPLOAD & MANAGEMENT ===
-    
     @Multipart
     @POST("files")
     suspend fun uploadFileToReminder(
@@ -81,7 +69,6 @@ interface ApiService {
         @Part("id_reminder") idReminder: RequestBody
     ): Response<ReminderResponse<FileApiModel>>
 
-    // Existing generic upload (might be used for notes later)
     @Multipart
     @POST("files/upload")
     fun uploadFile(

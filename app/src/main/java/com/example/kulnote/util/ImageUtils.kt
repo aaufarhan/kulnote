@@ -19,9 +19,6 @@ object ImageUtils {
         )
     }
 
-    /**
-     * Mendapatkan URI dari file menggunakan FileProvider
-     */
     fun getUriForFile(context: Context, file: File): Uri {
         return FileProvider.getUriForFile(
             context,

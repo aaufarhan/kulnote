@@ -33,24 +33,21 @@ import com.example.kulnote.data.model.Note
 @Composable
 fun NoteListScreen(
     navController: NavController,
-    matkulId: String, // Mengganti folderId menjadi matkulId
+    matkulId: String,
     scheduleViewModel: ScheduleViewModel,
     noteViewModel: NoteViewModel
 ) {
     val mataKuliahList by scheduleViewModel.mataKuliahList.collectAsState()
 
-    // KRUSIAL: Set matkul ID saat screen dibuka
     LaunchedEffect(matkulId) {
         noteViewModel.setCurrentMatkul(matkulId)
     }
 
-    // KRUSIAL: Ambil semua catatan menggunakan StateFlow yang sudah diperbaiki
     val allNotes by noteViewModel.noteList.collectAsState()
 
     val currentMatkul = mataKuliahList.find { it.id == matkulId }
     val folderTitle = currentMatkul?.namaMatkul ?: "Catatan"
 
-    // Filter catatan dari StateFlow berdasarkan ID mata kuliah
     val notes = allNotes.filter { it.matkulId == matkulId }
 
     Scaffold(
@@ -99,7 +96,6 @@ fun NoteListScreen(
     }
 }
 
-// Asumsi: Composable NoteItem
 @Composable
 fun NoteItem(
     title: String,
@@ -128,7 +124,7 @@ fun NoteItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_note), // Ganti dengan icon note yang sesuai
+                painter = painterResource(id = R.drawable.ic_note),
                 contentDescription = "Note Icon",
                 modifier = Modifier.size(24.dp),
                 tint = MaterialTheme.colorScheme.primary

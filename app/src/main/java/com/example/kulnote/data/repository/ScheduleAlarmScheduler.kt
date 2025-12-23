@@ -76,12 +76,10 @@ class ScheduleAlarmScheduler(private val context: Context) {
         val now = Calendar.getInstance()
         val todayDow = now.get(Calendar.DAY_OF_WEEK)
 
-        // Jika hari jadwal sama dengan hari ini, kirim segera (~5 detik)
         if (dayOfWeek == todayDow) {
             return now.timeInMillis + 5_000
         }
 
-        // Jika tidak, jadwalkan di hari tersebut (minggu ini atau berikutnya) jam 07:00
         val trigger = Calendar.getInstance().apply {
             set(Calendar.DAY_OF_WEEK, dayOfWeek)
             set(Calendar.HOUR_OF_DAY, 7)
@@ -113,7 +111,6 @@ class ScheduleAlarmScheduler(private val context: Context) {
     private fun parseTime(raw: String): Pair<Int, Int>? {
         val trimmed = raw.trim()
 
-        // Format HH:mm:ss or HH:mm
         val parts = trimmed.split(":")
         if (parts.size >= 2) {
             val h = parts[0].toIntOrNull()
@@ -121,7 +118,6 @@ class ScheduleAlarmScheduler(private val context: Context) {
             if (h != null && m != null) return h to m
         }
 
-        // Fallback for HHmm (e.g., 0730)
         val digits = trimmed.filter { it.isDigit() }
         if (digits.length == 4) {
             val h = digits.substring(0, 2).toIntOrNull()

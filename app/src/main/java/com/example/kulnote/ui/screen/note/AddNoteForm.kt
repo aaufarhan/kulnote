@@ -118,9 +118,7 @@ fun AddNoteForm(
                     Button(
                         onClick = {
                             noteViewModel.saveNewNote(input) { newNoteId ->
-                                // Callback dipanggil setelah note berhasil disimpan
-                                onDismiss() // Tutup dialog
-                                // Navigasi ke editor dengan note ID yang baru
+                                onDismiss()
                                 navController.navigate("note_content_screen/$newNoteId")
                             }
                         },
@@ -134,31 +132,3 @@ fun AddNoteForm(
         }
     }
 }
-
-
-//@Composable
-//fun NoSchedulePlaceholderContent(
-//    navController: NavController,
-//    onDismiss: () -> Unit
-//) {
-//    Column(
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        modifier = Modifier.padding(16.dp)
-//    ) {
-//        Text(
-//            text = "Anda harus menambahkan Jadwal terlebih dahulu sebelum membuat catatan baru.",
-//            style = MaterialTheme.typography.titleMedium,
-//            color = MaterialTheme.colorScheme.onSurfaceVariant
-//        )
-//        Spacer(modifier = Modifier.height(24.dp))
-//        Button(
-//            onClick = {
-//                onDismiss() // Tutup dialog
-//                navController.navigate("add_schedule") // Arahkan ke tambah jadwal
-//            },
-//            modifier = Modifier.fillMaxWidth()
-//        ) {
-//            Text("Tambah Jadwal Sekarang")
-//        }
-//    }
-//}

@@ -20,24 +20,20 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController) {
-    // 1. Dapatkan ViewModel
     val authViewModel: AuthViewModel = viewModel()
 
-    // 2. Amati State dari ViewModel
     val isLoading by authViewModel.isLoading.collectAsState()
     val errorMessage by authViewModel.error.collectAsState()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
-    var email by remember { mutableStateOf("") } // Ganti username menjadi email
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val scope = rememberCoroutineScope() // Wajib untuk menjalankan navigasi
+    val scope = rememberCoroutineScope()
 
-    // Efek samping: Navigasi setelah login berhasil
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
             navController.navigate("note_folders") {
-                // Bersihkan back stack agar pengguna tidak bisa kembali ke login
                 popUpTo("login") { inclusive = true }
             }
         }
@@ -95,7 +91,6 @@ fun LoginScreen(navController: NavController) {
             Button(
                 onClick = {
                     if (email.isNotBlank() && password.isNotBlank()) {
-                        // Panggil ViewModel untuk Login
                         authViewModel.attemptLogin(email, password)
                     }
                 },
@@ -118,9 +113,7 @@ fun LoginScreen(navController: NavController) {
                 }
             }
 
-            // Tambahkan Tombol Registrasi (Opsional)
             TextButton(onClick = {
-                // Navigasi ke laman registrasi
                 navController.navigate("register")
             }) {
                 Text("Belum punya akun? Daftar sekarang")

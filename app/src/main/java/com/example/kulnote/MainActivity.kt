@@ -60,10 +60,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Initialize PreferencesManager
         PreferencesManager.init(this)
-        
-        // Load session dari SharedPreferences
         SessionManager.loadSession()
         
         setContent {
@@ -153,7 +150,6 @@ fun NavigationGraph(
     noteViewModel: NoteViewModel,
     reminderViewModel: ReminderViewModel
 ) {
-    // Cek apakah user sudah login
     val isLoggedIn = PreferencesManager.isLoggedIn()
     val startDestination = if (isLoggedIn) "note_folders" else "login"
     
@@ -162,8 +158,6 @@ fun NavigationGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-
-        // Halaman Login
         composable("login") {
             LoginScreen(navController)
         }
@@ -172,28 +166,23 @@ fun NavigationGraph(
             RegisterScreen(navController)
         }
 
-        // Halaman Default (Folder List)
         composable("note_folders") {
             NoteFolderListScreen(navController, scheduleViewModel, modifier)
         }
 
-        // Halaman Add
         composable("add_page") {
             AddPageScreen(navController, scheduleViewModel, noteViewModel, reminderViewModel)
         }
 
-        //Halaman Schedule
         composable("schedule") {
             ScheduleListScreen(navController, scheduleViewModel)
         }
 
-        // Halaman Reminder
         composable("reminder_list") {
             ReminderListScreen(
                 navController, reminderViewModel)
         }
 
-        // Halaman Note List (dengan argumen ID matkul)
         composable(
             route = "note_list_screen/{matkulId}",
             arguments = listOf(
@@ -213,23 +202,20 @@ fun NavigationGraph(
             )
         }
         composable(
-            route = "note_content_screen/{noteId}", // Rute baru dengan argumen noteId
+            route = "note_content_screen/{noteId}",
             arguments = listOf(
-                navArgument("noteId") { type = NavType.StringType } // Definisikan tipe argumen
+                navArgument("noteId") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            // Ambil noteId dari argumen navigasi
             val noteId = backStackEntry.arguments?.getString("noteId")
 
             if (noteId != null) {
-                // Tampilkan NoteContentScreen jika noteId ada
                 NoteContentScreen(
                     navController = navController,
                     noteId = noteId,
                     noteViewModel = noteViewModel
                 )
             } else {
-                // Jika karena alasan tertentu noteId null, kembali ke layar sebelumnya
                 navController.popBackStack()
             }
         }
@@ -257,7 +243,6 @@ fun ProfileMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            // Header - Nama dan Email
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
@@ -277,7 +262,6 @@ fun ProfileMenu(
             
             Divider()
             
-            // Menu Logout
             DropdownMenuItem(
                 text = {
                     Row(

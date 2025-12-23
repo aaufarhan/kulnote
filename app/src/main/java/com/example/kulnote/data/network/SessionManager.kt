@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 object SessionManager {
-    // currentUserId yang bisa di-observe
     private val _currentUserId = MutableStateFlow<String?>(null)
     val currentUserId: StateFlow<String?> = _currentUserId
 
@@ -20,24 +19,20 @@ object SessionManager {
         _currentUser.value = user
         _currentUserId.value = user?.id
         
-        // Simpan ke SharedPreferences
         if (user != null) {
             PreferencesManager.saveUserData(user.id, user.name, user.email)
         }
     }
 
-    // Simpan token juga (optional) agar satu tempat menyimpan sesi
     var authToken: String?
         get() = ApiClient.authToken
         set(value) { 
             ApiClient.authToken = value
-            // Simpan ke SharedPreferences
             if (value != null) {
                 PreferencesManager.saveToken(value)
             }
         }
     
-    // Load session dari SharedPreferences saat aplikasi dibuka
     fun loadSession() {
         val token = PreferencesManager.getToken()
         val userId = PreferencesManager.getUserId()
@@ -51,7 +46,6 @@ object SessionManager {
         }
     }
     
-    // Clear session
     fun clearSession() {
         _currentUser.value = null
         _currentUserId.value = null

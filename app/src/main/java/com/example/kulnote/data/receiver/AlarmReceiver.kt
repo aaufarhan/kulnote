@@ -59,7 +59,7 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
 
                 val notification = NotificationCompat.Builder(context, channelId)
-                    .setSmallIcon(R.drawable.ic_launcher_foreground) // Ganti dengan icon aplikasi Anda
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setContentTitle(title)
                     .setContentText(message)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)

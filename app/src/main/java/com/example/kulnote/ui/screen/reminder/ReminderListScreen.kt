@@ -49,19 +49,16 @@ fun ReminderListScreen(
     var detailTarget by remember { mutableStateOf<ReminderEntity?>(null) }
     var editTarget by remember { mutableStateOf<ReminderEntity?>(null) }
 
-    // --- LOGIKA IZIN NOTIFIKASI ---
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
             if (!isGranted) {
-                // Notifikasi tidak akan muncul jika izin ditolak
             }
         }
     )
 
     LaunchedEffect(Unit) {
         reminderViewModel.fetchReminders()
-        // Minta izin jika Android 13 ke atas
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
@@ -330,12 +327,10 @@ fun DetailRow(label: String, value: String) {
 
 fun checkIfPast(waktuReminder: String): Boolean {
     return try {
-        // Gunakan SimpleDateFormat agar kompatibel dengan API 24
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val reminderDate = sdf.parse(waktuReminder)
         val now = Date()
 
-        // Cek apakah waktu reminder sudah sebelum waktu sekarang
         reminderDate?.before(now) ?: false
     } catch (e: Exception) {
         false

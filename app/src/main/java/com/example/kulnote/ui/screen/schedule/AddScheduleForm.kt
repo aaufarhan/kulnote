@@ -24,27 +24,22 @@ private val daysOfWeek = listOf(
 )
 
 private fun calculateEndTime(startTime: String, sks: String): String {
-    // 1. Validasi SKS
     val sksInt = sks.toIntOrNull()
-    if (sksInt == null || sksInt <= 0) return "" // SKS tidak valid
+    if (sksInt == null || sksInt <= 0) return ""
 
-    // 2. Validasi Jam Mulai (harus 4 digit "HHMM")
     if (startTime.length != 4) return ""
     val startHour = startTime.substring(0, 2).toIntOrNull()
     val startMinute = startTime.substring(2, 4).toIntOrNull()
 
-    if (startHour == null || startMinute == null) return "" // Jam tidak valid
+    if (startHour == null || startMinute == null) return ""
 
-    // 3. Hitung durasi
     val durationInMinutes = sksInt * 50
 
-    // 4. Hitung total menit
     val totalStartMinutes = (startHour * 60) + startMinute
     val totalEndMinutes = totalStartMinutes + durationInMinutes
     val endHour = (totalEndMinutes / 60) % 24
     val endMinute = totalEndMinutes % 60
 
-    // 6. Format kembali ke "HHMM"
     val endHourStr = endHour.toString().padStart(2, '0')
     val endMinuteStr = endMinute.toString().padStart(2, '0')
 
@@ -100,13 +95,10 @@ fun AddScheduleForm(
         dosenText = initialInput.dosen
     }
 
-    // Logika Hitung Waktu Otomatis SKS
     LaunchedEffect(input.jamMulai, sksText) {
-        // Hanya hitung jika kedua field tidak kosong
         if (input.jamMulai.isNotBlank() && sksText.isNotBlank()) {
             val endTime = calculateEndTime(input.jamMulai, sksText)
             if (endTime.isNotBlank()) {
-                // Update state 'input' dengan jam selesai yang baru
                 input = input.copy(jamSelesai = endTime)
             }
         }
@@ -135,7 +127,6 @@ fun AddScheduleForm(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // --- INPUT FIELD ---
             OutlinedTextField(
                 value = input.namaMatkul,
                 onValueChange = { input = input.copy(namaMatkul = it) },
@@ -165,7 +156,6 @@ fun AddScheduleForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
-            // Dropdown Hari
             ExposedDropdownMenuBox(
                 expanded = isExpanded,
                 onExpandedChange = { isExpanded = it },
@@ -202,7 +192,6 @@ fun AddScheduleForm(
                 }
             }
 
-            // Jam Mulai & Selesai
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -221,7 +210,7 @@ fun AddScheduleForm(
                 )
 
                 OutlinedTextField(
-                    value = input.jamSelesai, // Field ini sekarang akan ter-update otomatis
+                    value = input.jamSelesai,
                     onValueChange = {
                         val filtered = it.filter { c -> c.isDigit() }.take(4)
                         input = input.copy(jamSelesai = filtered)

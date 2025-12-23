@@ -1,5 +1,3 @@
-// FILE: ScheduleViewModel.kt (Modifikasi)
-
 package com.example.kulnote.data.viewmodel
 
 import android.app.Application
@@ -22,10 +20,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
-// Ganti ViewModel menjadi AndroidViewModel karena membutuhkan Context
 class ScheduleViewModel(application: Application) : AndroidViewModel(application) {
 
-    // --- INJEKSI DEPENDENCY ---
     private val database = AppDatabase.getDatabase(application)
     private val repository = ScheduleRepository(
         apiService = ApiClient.apiService,
@@ -33,8 +29,6 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         context = application.applicationContext
     )
 
-    // --- STATE FLOW BARU (Mengambil dari Repository/Room) ---
-    // Mengubah ScheduleEntity lokal menjadi MataKuliah Model yang digunakan UI
     val mataKuliahList: StateFlow<List<MataKuliah>> =
         SessionManager.currentUserId
             .flatMapLatest { userId ->
@@ -47,16 +41,13 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                 initialValue = emptyList()
             )
 
-    // Inisialisasi: Panggil refresh jika token tersedia
     init {
-        // Jika token tersedia saat startup, lakukan satu kali refresh
         if (ApiClient.authToken != null) {
             refreshDataFromNetwork()
         } else {
             android.util.Log.d("ScheduleViewModel", "⚠️ Skip refresh: authToken belum tersedia")
         }
 
-        // Observasi perubahan currentUserId dan refresh saat user baru login
         viewModelScope.launch {
             var lastUserId: String? = null
             SessionManager.currentUserId.collect { userId ->
@@ -69,8 +60,6 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-
-    // Fungsi untuk menarik data terbaru dari server
     fun refreshDataFromNetwork() {
         viewModelScope.launch {
             try {
@@ -79,19 +68,15 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
                 android.util.Log.d("ScheduleViewModel", "✅ Refresh berhasil!")
             } catch (e: Exception) {
                 android.util.Log.e("ScheduleViewModel", "❌ Refresh gagal: ${e.message}", e)
-                // Nanti: Tampilkan Toast/Snackbar error di UI
             }
         }
     }
-
-    // --- FUNGSI SAVE BARU (Menggunakan Repository) ---
 
     fun saveNewSchedule(input: ScheduleInput) {
         viewModelScope.launch {
             try {
                 android.util.Log.d("ScheduleViewModel", "💾 Menyimpan jadwal baru: ${input.namaMatkul}")
 
-                // 1. Konversi ScheduleInput ke ScheduleRequest untuk Network
                 val request = ScheduleRequest(
                     namaMatakuliah = input.namaMatkul,
                     sks = input.sks.toIntOrNull() ?: 0,
@@ -104,7 +89,6 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
 
                 android.util.Log.d("ScheduleViewModel", "📤 Request: $request")
 
-                // 2. Kirim ke Repository (yang akan mengirim ke Server & Refresh Room)
                 repository.createSchedule(request)
 
                 android.util.Log.d("ScheduleViewModel", "✅ Jadwal berhasil disimpan!")
@@ -150,11 +134,6 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
         }
     }
 }
-
-// --- EXTENSION UNTUK MAPPING ---
-// Anda perlu membuat model MataKuliah dan ScheduleRequest agar mapping ini berfungsi
-
-// Mapping dari ScheduleEntity (Room) ke MataKuliah (UI Model)
 fun ScheduleEntity.toUiModel(): MataKuliah {
     return MataKuliah(
         id = this.id,

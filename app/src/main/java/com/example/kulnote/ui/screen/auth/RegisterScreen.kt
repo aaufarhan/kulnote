@@ -1,5 +1,3 @@
-// FILE: RegisterScreen.kt
-
 package com.example.kulnote.ui.screen.auth
 
 import androidx.compose.foundation.layout.*
@@ -22,10 +20,8 @@ import com.example.kulnote.data.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-    // 1. Dapatkan ViewModel
     val authViewModel: AuthViewModel = viewModel()
 
-    // 2. Amati State dari ViewModel
     val isLoading by authViewModel.isLoading.collectAsState()
     val errorMessage by authViewModel.error.collectAsState()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
@@ -35,14 +31,11 @@ fun RegisterScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    // Validasi sederhana: password harus sama dan semua field terisi
     val isFormValid = name.isNotBlank() && email.isNotBlank() && password.isNotBlank() &&
             password == confirmPassword && password.length >= 8
 
-    // Efek samping: Navigasi setelah registrasi berhasil
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
-            // Setelah registrasi, langsung pindah ke halaman utama
             navController.navigate("note_folders") {
                 popUpTo("register") { inclusive = true }
             }
@@ -66,7 +59,6 @@ fun RegisterScreen(navController: NavController) {
                 fontWeight = FontWeight.Bold
             )
 
-            // Input Nama
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -77,7 +69,6 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Input Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -88,7 +79,6 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Input Password
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -100,7 +90,6 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Input Konfirmasi Password
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -112,7 +101,6 @@ fun RegisterScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Tampilkan error jika ada
             if (errorMessage != null) {
                 Text(
                     text = errorMessage!!,
@@ -121,15 +109,13 @@ fun RegisterScreen(navController: NavController) {
                 )
             }
 
-            // Tombol Register
             Button(
                 onClick = {
                     if (isFormValid) {
-                        // Panggil ViewModel untuk Registrasi
                         authViewModel.attemptRegister(name, email, password)
                     }
                 },
-                enabled = isFormValid && !isLoading, // Disable saat form tidak valid atau loading
+                enabled = isFormValid && !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -148,7 +134,6 @@ fun RegisterScreen(navController: NavController) {
                 }
             }
 
-            // Tombol kembali ke Login
             TextButton(onClick = {
                 navController.popBackStack()
             }) {

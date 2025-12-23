@@ -22,16 +22,13 @@ class ReminderViewModel(application: Application) : AndroidViewModel(application
         context = application
     )
 
-    // Mengambil SEMUA data dari Room secara real-time (Flow)
     val allReminders = repository.allReminders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        // Otomatis fetch saat VM dibuat
         fetchReminders()
     }
 
-    // Fungsi untuk memicu sinkronisasi dari server ke lokal
     fun fetchReminders() {
         viewModelScope.launch {
             repository.refreshReminders()

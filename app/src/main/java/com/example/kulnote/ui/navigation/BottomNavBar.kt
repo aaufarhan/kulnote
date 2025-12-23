@@ -47,56 +47,50 @@ fun BottomNavBar(navController: NavController) {
         BottomNavItem("Add", R.drawable.ic_add_inactive, R.drawable.ic_add_inactive, "add_page")
     )
 
-    // Deteksi tema sistem (dark/light)
     val isDarkTheme = isSystemInDarkTheme()
 
-    // Container background: putih blur transparan untuk dark theme, hitam blur transparan untuk light theme
     val containerColor = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.15f) // Putih transparan blur untuk tema gelap
+        Color.White.copy(alpha = 0.15f)
     } else {
-        Color.Black.copy(alpha = 0.3f) // Hitam transparan blur untuk tema terang
+        Color.Black.copy(alpha = 0.3f)
     }
 
-    // Border color: putih transparan untuk dark theme, hitam transparan untuk light theme
     val borderColor = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.2f) // Putih transparan untuk tema gelap
+        Color.White.copy(alpha = 0.2f)
     } else {
-        Color.Black.copy(alpha = 0.15f) // Hitam transparan untuk tema terang
+        Color.Black.copy(alpha = 0.15f)
     }
 
-    // Icon wrapper background: putih untuk dark theme, abu-abu gelap untuk light theme
     val iconBackgroundSelected = if (isDarkTheme) {
-        Color.White // Putih solid untuk selected (dark mode)
+        Color.White
     } else {
-        Color(0xFF2C2C2C) // Gelap untuk selected (light mode)
+        Color(0xFF2C2C2C)
     }
 
     val iconBackgroundUnselected = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.15f) // Putih transparan untuk unselected (dark mode)
+        Color.White.copy(alpha = 0.15f)
     } else {
-        Color.Black.copy(alpha = 0.1f) // Hitam transparan untuk unselected (light mode)
+        Color.Black.copy(alpha = 0.1f)
     }
 
     val iconColorSelected = if (isDarkTheme) {
-        Color.Black // Icon hitam pada background putih (dark mode)
+        Color.Black
     } else {
-        Color.White // Icon putih pada background gelap (light mode)
+        Color.White
     }
 
     val iconColorUnselected = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.7f) // Icon putih transparan (dark mode)
+        Color.White.copy(alpha = 0.7f)
     } else {
-        Color.Black.copy(alpha = 0.6f) // Icon hitam transparan (light mode)
+        Color.Black.copy(alpha = 0.6f)
     }
 
-    // Floating Container
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 16.dp), // Floating effect
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Custom container dengan full control (tidak pakai NavigationBar)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,7 +109,6 @@ fun BottomNavBar(navController: NavController) {
                     shape = RoundedCornerShape(30.dp)
                 )
         ) {
-            // Row untuk layout icon secara horizontal
             Row(
                 modifier = Modifier
                     .fillMaxSize(),
@@ -129,14 +122,13 @@ fun BottomNavBar(navController: NavController) {
                     val selected = currentRoute == item.route
                     val interactionSource = remember { MutableInteractionSource() }
 
-                    // Custom clickable Box untuk setiap icon
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                             .clickable(
                                 interactionSource = interactionSource,
-                                indication = null // No ripple effect
+                                indication = null
                             ) {
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.startDestinationId)
@@ -145,7 +137,6 @@ fun BottomNavBar(navController: NavController) {
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        // Circle background wrapper untuk icon
                         Box(
                             modifier = Modifier
                                 .size(52.dp)

@@ -2,7 +2,6 @@ package com.example.kulnote.data.model.network
 
 import com.google.gson.annotations.SerializedName
 
-// Response untuk upload file
 data class FileUploadResponse(
     val status: String,
     val message: String,
@@ -19,7 +18,6 @@ data class FileUploadData(
     val mimeType: String
 )
 
-// Request untuk delete file
 data class FileDeleteRequest(
     val path: String
 )

@@ -23,6 +23,6 @@ data class ReminderFileEntity(
     val idReminder: String,
     val namaFile: String,
     val tipeFile: String,
-    val remoteUrl: String?, // URL di server
-    val localPath: String? = null // Path di penyimpanan internal aplikasi
+    val remoteUrl: String?,
+    val localPath: String? = null
 )

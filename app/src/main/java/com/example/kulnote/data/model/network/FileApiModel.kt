@@ -9,5 +9,5 @@ data class FileApiModel(
     @SerializedName("nama_file") val namaFile: String,
     @SerializedName("tipe_file") val tipeFile: String,
     @SerializedName("path_file") val pathFile: String,
-    @SerializedName("url") val url: String // Full URL dari accessor Laravel
+    @SerializedName("url") val url: String
 )

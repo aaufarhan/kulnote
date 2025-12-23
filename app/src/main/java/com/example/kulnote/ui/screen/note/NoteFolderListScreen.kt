@@ -80,15 +80,14 @@ fun NoteFolderListScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item(span = { GridItemSpan(2) }) { // Span 2 agar Spacer mengisi seluruh lebar
-                    Spacer(modifier = Modifier.height(16.dp)) // Beri tinggi yang diinginkan
+                item(span = { GridItemSpan(2) }) {
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
                 items(mataKuliahList, key = { it.id }) { mataKuliah ->
                     FolderItem(
                         title = mataKuliah.namaMatkul,
                         onClick = {
                             val matkulId = mataKuliah.id
-                            // Navigasi ke rute baru menggunakan matkulId:
                             navController.navigate("note_list_screen/$matkulId")
                         }
                     )
@@ -107,36 +106,30 @@ fun FolderItem(
     var isPressed by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
-    // Deteksi tema sistem
     val isDarkTheme = isSystemInDarkTheme()
 
-    // Container background: putih blur transparan untuk dark theme, hitam blur transparan untuk light theme
     val containerColor = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.15f) // Putih transparan blur untuk tema gelap
+        Color.White.copy(alpha = 0.15f)
     } else {
-        Color.Black.copy(alpha = 0.3f) // Hitam transparan blur untuk tema terang
+        Color.Black.copy(alpha = 0.3f)
     }
 
-    // Border color: putih transparan untuk dark theme, hitam transparan untuk light theme
     val borderColor = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.2f) // Putih transparan untuk tema gelap
+        Color.White.copy(alpha = 0.2f)
     } else {
-        Color.Black.copy(alpha = 0.15f) // Hitam transparan untuk tema terang
+        Color.Black.copy(alpha = 0.15f)
     }
 
-    // Icon folder adaptive: ic_folderdark untuk dark theme, ic_folderlight untuk light theme
     val folderIcon = if (isDarkTheme) {
-        R.drawable.ic_folderdark // Icon folder untuk tema gelap
+        R.drawable.ic_folderdark
     } else {
-        R.drawable.ic_folderlight // Icon folder untuk tema terang
+        R.drawable.ic_folderlight
     }
 
-    // animasi fade-in saat pertama kali tampil
     LaunchedEffect(Unit) {
         visible = true
     }
 
-    // animasi scale saat diklik
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 1.05f else 1f,
         animationSpec = tween(durationMillis = 150),
@@ -165,11 +158,11 @@ fun FolderItem(
                     }
                 },
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, borderColor), // Border adaptive
+            border = BorderStroke(1.dp, borderColor),
             colors = CardDefaults.cardColors(
-                containerColor = containerColor // Container adaptive: putih blur (dark) / hitam blur (light)
+                containerColor = containerColor
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp) // No shadow untuk glassmorphism
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier

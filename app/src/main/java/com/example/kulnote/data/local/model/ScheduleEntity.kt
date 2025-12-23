@@ -5,11 +5,8 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "schedules_table")
 data class ScheduleEntity(
-    // ID Jadwal (Primary Key)
     @PrimaryKey
     val id: String,
-
-    // Foreign Key ke User (walaupun di local, ini bagus untuk konsistensi)
     val userId: String,
 
     val namaMatakuliah: String,
@@ -19,6 +16,4 @@ data class ScheduleEntity(
     val jamMulai: String,
     val jamSelesai: String,
     val ruangan: String?
-
-    // Nanti ditambahkan: val needsSync: Boolean = false (untuk Offline-First)
 )

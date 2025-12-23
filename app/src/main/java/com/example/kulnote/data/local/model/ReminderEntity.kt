@@ -14,14 +14,10 @@ data class ReminderEntity(
 
     val deskripsi: String?,
 
-    // Waktu yang ditentukan untuk pengingat (penting untuk notifikasi)
-    // Disarankan menggunakan format ISO 8601 String (YYYY-MM-DDTHH:MM:SS)
     val waktuReminder: String,
 
-    // Status penyelesaian task
     val isCompleted: Boolean = false,
 
-    // URL file sisipan jika ada
     val fileUrl: String? = null,
 
     val createdAt: String?,

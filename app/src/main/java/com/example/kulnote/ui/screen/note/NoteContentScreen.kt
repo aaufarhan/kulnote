@@ -65,16 +65,13 @@ fun NoteContentScreen(
 ) {
     val context = LocalContext.current
 
-    // Observe note dari noteList StateFlow
     val noteList by noteViewModel.noteList.collectAsState()
     val note = remember(noteId, noteList) {
         noteList.find { it.id == noteId }
     }
 
-    // Try to get matkulId from note, if available
     val matkulId = note?.matkulId
 
-    // Set current matkul ID once when we know it
     LaunchedEffect(matkulId) {
         if (matkulId != null) {
             android.util.Log.d("NoteContentScreen", "🎯 Setting matkulId: $matkulId for noteId: $noteId")
@@ -91,7 +88,6 @@ fun NoteContentScreen(
         }
     }
 
-    // Update title and content when note changes
     LaunchedEffect(note) {
         note?.let {
             noteTitle = it.title
@@ -101,7 +97,6 @@ fun NoteContentScreen(
         }
     }
 
-    // Nama folder/matkul
     val mataKuliahList by scheduleViewModel.mataKuliahList.collectAsState()
     val folderName = remember(note, mataKuliahList) {
         mataKuliahList.find { it.id == note?.matkulId }?.namaMatkul ?: "Note"
@@ -113,12 +108,9 @@ fun NoteContentScreen(
     var lastFocusedTextFieldIndex by remember { mutableStateOf(0) }
     var lastTextFieldCursorPosition by remember { mutableStateOf(TextRange.Zero) }
 
-    // State untuk menyimpan URI foto yang akan diambil
     var photoUri by remember { mutableStateOf<Uri?>(null) }
     var currentPhotoFile by remember { mutableStateOf<java.io.File?>(null) }
 
-    // Launcher untuk mengambil foto
-    // State untuk upload progress
     var isUploading by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
 
@@ -126,7 +118,6 @@ fun NoteContentScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && photoUri != null) {
-            // Upload image to server first
             isUploading = true
             uploadError = null
 
@@ -134,7 +125,6 @@ fun NoteContentScreen(
                 val result = com.example.kulnote.util.FileUploadHelper.uploadImage(context, photoUri!!)
 
                 result.onSuccess { serverUrl ->
-                    // Use server URL instead of local URI
                     val newImage = NoteContentItem.Image(
                         drawableResId = null,
                         imageUri = serverUrl
@@ -145,7 +135,6 @@ fun NoteContentScreen(
                         lastFocusedTextFieldIndex,
                         lastTextFieldCursorPosition
                     )
-                    // Persist immediately
                     noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
                     isUploading = false
                     showBottomSheet = false
@@ -162,7 +151,6 @@ fun NoteContentScreen(
         currentPhotoFile = null
     }
 
-    // Launcher untuk request permission kamera
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -179,12 +167,10 @@ fun NoteContentScreen(
         }
     }
 
-    // Launcher untuk pick image dari galeri (SINGLE)
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            // Upload image to server first
             isUploading = true
             uploadError = null
 
@@ -192,7 +178,6 @@ fun NoteContentScreen(
                 val result = com.example.kulnote.util.FileUploadHelper.uploadImage(context, uri)
 
                 result.onSuccess { serverUrl ->
-                    // Use server URL instead of local URI
                     val newImage = NoteContentItem.Image(
                         drawableResId = null,
                         imageUri = serverUrl
@@ -203,7 +188,6 @@ fun NoteContentScreen(
                         lastFocusedTextFieldIndex,
                         lastTextFieldCursorPosition
                     )
-                    // Persist immediately
                     noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
                     isUploading = false
                     showBottomSheet = false
@@ -215,12 +199,10 @@ fun NoteContentScreen(
         }
     }
 
-    // Launcher untuk pick file
     val pickFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri != null) {
-            // Query display name safely using projection
             val fileName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -228,7 +210,6 @@ fun NoteContentScreen(
                 } else "Unknown File"
             } ?: "Unknown File"
 
-            // Upload file to server first
             isUploading = true
             uploadError = null
 
@@ -236,7 +217,6 @@ fun NoteContentScreen(
                 val result = com.example.kulnote.util.FileUploadHelper.uploadDocument(context, uri, fileName)
 
                 result.onSuccess { serverUrl ->
-                    // Use server URL instead of local URI
                     val newFile = NoteContentItem.File(
                         fileName = fileName,
                         fileUri = serverUrl
@@ -247,7 +227,6 @@ fun NoteContentScreen(
                         lastFocusedTextFieldIndex,
                         lastTextFieldCursorPosition
                     )
-                    // Persist immediately
                     noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
                     isUploading = false
                     showBottomSheet = false
@@ -259,7 +238,6 @@ fun NoteContentScreen(
         }
     }
 
-    // Logika Simpan Otomatis
     fun saveChanges() {
         noteViewModel.updateNoteContent(noteId, noteTitle, noteContent.toList())
         navController.popBackStack()
@@ -302,7 +280,6 @@ fun NoteContentScreen(
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp)
             ) {
-                // Title
                 item {
                     TextField(
                         value = noteTitle,
@@ -332,7 +309,6 @@ fun NoteContentScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
 
-                // Content Items
                 itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
                     when (item) {
                         is NoteContentItem.Text -> {
@@ -399,13 +375,11 @@ fun NoteContentScreen(
                             FileAttachmentItem(fileName = item.fileName)
                         }
                         else -> {
-                            // Handle other types (ImageGroup, etc) if any
                         }
                     }
                 }
             }
 
-            // Bottom Sheet
             if (showBottomSheet) {
                 ModalBottomSheet(
                     onDismissRequest = { showBottomSheet = false },
@@ -439,7 +413,6 @@ fun NoteContentScreen(
                 }
             }
 
-            // Upload Progress Overlay
             if (isUploading) {
                 Box(
                     modifier = Modifier
@@ -462,10 +435,8 @@ fun NoteContentScreen(
                 }
             }
 
-            // Upload Error Snackbar
             uploadError?.let { error ->
                 LaunchedEffect(error) {
-                    // Show error for 3 seconds then clear
                     kotlinx.coroutines.delay(3000)
                     uploadError = null
                 }
@@ -473,8 +444,6 @@ fun NoteContentScreen(
         }
     }
 }
-
-// New composable: ResizableImage dengan multi-handle + pinch-to-zoom
 @Composable
 fun ResizableImage(
     imageUri: String?,
@@ -511,7 +480,6 @@ fun ResizableImage(
         if (newWidthFraction != widthFraction) {
             val oldFraction = widthFraction
             widthFraction = newWidthFraction
-            // Ubah lebar saja, tinggi tetap (mengubah aspect ratio sesuai permintaan)
             val scaleFactor = if (widthPx > 0 && oldFraction > 0f) newWidthFraction / oldFraction else 1f
             widthPx = (widthPx * scaleFactor).toInt().coerceAtLeast(120)
             aspectRatio = widthPx.toFloat() / heightPx.toFloat()
@@ -598,19 +566,16 @@ fun ResizableImage(
                 )
             }
 
-            // Border overlay
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .border(2.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
             )
 
-            // Overlay untuk handle multi-sisi & sudut
             Box(modifier = Modifier.matchParentSize()) {
                 val handleSize = 16.dp
                 val cornerOffset = 6.dp
 
-                // Kiri
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.CenterStart)
@@ -621,7 +586,6 @@ fun ResizableImage(
                     tooltip = "Resize kiri"
                 )
 
-                // Kanan
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
@@ -632,7 +596,6 @@ fun ResizableImage(
                     tooltip = "Resize kanan"
                 )
 
-                // Atas
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -643,7 +606,6 @@ fun ResizableImage(
                     tooltip = "Resize atas"
                 )
 
-                // Bawah
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -654,7 +616,6 @@ fun ResizableImage(
                     tooltip = "Resize bawah"
                 )
 
-                // Sudut kiri atas
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -665,7 +626,6 @@ fun ResizableImage(
                     tooltip = "Resize sudut"
                 )
 
-                // Sudut kanan atas
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -676,7 +636,6 @@ fun ResizableImage(
                     tooltip = "Resize sudut"
                 )
 
-                // Sudut kiri bawah
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -687,7 +646,6 @@ fun ResizableImage(
                     tooltip = "Resize sudut"
                 )
 
-                // Sudut kanan bawah
                 ResizeHandle(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -783,10 +741,9 @@ fun insertContentItem(
     cursorPosition: TextRange
 ) {
     if (index < 0 || index >= contentList.size) {
-        // Jika indeks tidak valid, tambahkan di akhir
         contentList.add(newItem)
         if (newItem !is NoteContentItem.Text) {
-            contentList.add(NoteContentItem.Text("")) // Tambah field teks baru
+            contentList.add(NoteContentItem.Text(""))
         }
         return
     }
@@ -798,17 +755,14 @@ fun insertContentItem(
         val textAfter = currentText.substring(cursorPosition.start)
         contentList[index] = NoteContentItem.Text(textBefore)
 
-        // 2. Tambahkan item baru (gambar/file)
         val newItemIndex = index + 1
         contentList.add(newItemIndex, newItem)
 
-        // 3. Tambahkan teks "after" sebagai item baru
         if (textAfter.isNotEmpty() || newItem !is NoteContentItem.Text) {
             contentList.add(newItemIndex + 1, NoteContentItem.Text(textAfter))
         }
 
     } else {
-        // Jika item yang difokuskan bukan teks (misal, gambar),
         contentList.add(index + 1, newItem)
         if (newItem !is NoteContentItem.Text) {
             contentList.add(index + 2, NoteContentItem.Text(""))
