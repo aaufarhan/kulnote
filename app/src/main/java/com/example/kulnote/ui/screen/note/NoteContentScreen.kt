@@ -10,6 +10,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -34,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -48,6 +51,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.example.kulnote.data.model.NoteContentItem
 import com.example.kulnote.data.viewmodel.NoteViewModel
 import com.example.kulnote.data.viewmodel.ScheduleViewModel
@@ -335,7 +340,12 @@ fun NoteContentScreen(
             itemsIndexed(noteContent, key = { index, item -> item.hashCode() + index }) { index, item ->
                 when (item) {
                     is NoteContentItem.Text -> {
-                        var textValueState by remember { mutableStateOf(TextFieldValue(item.text, TextRange(item.text.length))) }
+                        var textValueState by remember(item) { mutableStateOf(TextFieldValue(item.text, TextRange(item.text.length))) }
+                        LaunchedEffect(item.text) {
+                            if (textValueState.text != item.text) {
+                                textValueState = TextFieldValue(item.text, TextRange(item.text.length))
+                            }
+                        }
                         TextField(
                             value = textValueState,
                             onValueChange = { newValue ->
@@ -361,29 +371,69 @@ fun NoteContentScreen(
                         )
                     }
                     is NoteContentItem.Image -> {
+                        var widthFraction by remember(item) { mutableStateOf(item.widthFraction.coerceIn(0.4f, 1f)) }
+                        fun applyWidth(f: Float) {
+                            val clamped = f.coerceIn(0.4f, 1f)
+                            widthFraction = clamped
+                            noteContent[index] = item.copy(widthFraction = clamped)
+                        }
                         if (item.imageUri != null) {
-                            AsyncImage(
-                                model = Uri.parse(item.imageUri),
+                            var aspectRatio by remember(item.imageUri) { mutableStateOf(4f / 3f) }
+                            SubcomposeAsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(Uri.parse(item.imageUri))
+                                    .crossfade(true)
+                                    .listener(
+                                        onSuccess = { _, result ->
+                                            val d = result.drawable
+                                            val w = d.intrinsicWidth.toFloat()
+                                            val h = d.intrinsicHeight.toFloat()
+                                            val ratio = if (w > 0 && h > 0) w / h else null
+                                            if (ratio != null && ratio.isFinite() && ratio > 0f) {
+                                                aspectRatio = ratio
+                                            }
+                                        }
+                                    )
+                                    .build(),
                                 contentDescription = "Note Image",
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxWidth(widthFraction)
                                     .padding(vertical = 8.dp)
-                                    .heightIn(max = 250.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
+                                    .aspectRatio(aspectRatio)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Fit
                             )
                         } else if (item.drawableResId != null) {
+                            val painter = painterResource(id = item.drawableResId)
+                            val intrinsic = painter.intrinsicSize
+                            val ratio = if (intrinsic.width > 0 && intrinsic.height > 0) {
+                                intrinsic.width / intrinsic.height
+                            } else 4f / 3f
                             Image(
-                                painter = painterResource(id = item.drawableResId),
+                                painter = painter,
                                 contentDescription = "Note Image",
                                 modifier = Modifier
-                                    .fillMaxWidth()
+                                    .fillMaxWidth(widthFraction)
                                     .padding(vertical = 8.dp)
-                                    .heightIn(max = 250.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
+                                    .aspectRatio(ratio)
+                                    .clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Fit
                             )
                         }
+
+                        // UI slider untuk mengatur lebar gambar (opsional per gambar)
+                        Slider(
+                            value = widthFraction,
+                            onValueChange = { applyWidth(it) },
+                            valueRange = 0.4f..1.0f,
+                            steps = 5,
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        )
+                        Text(
+                            text = "Lebar: ${(widthFraction * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     is NoteContentItem.File -> {
                         FileAttachmentItem(fileName = item.fileName)
@@ -394,76 +444,75 @@ fun NoteContentScreen(
                 }
             }
         }
-    }
 
-    // Bottom Sheet
-    if (showBottomSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
-            sheetState = sheetState
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                BottomSheetOption(
-                    icon = Icons.Default.PhotoCamera,
-                    text = "Take Photo"
-                ) {
-                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                }
-                BottomSheetOption(
-                    icon = Icons.Default.Image,
-                    text = "Add Image"
-                ) {
-                    pickImageLauncher.launch(
-                        androidx.activity.result.PickVisualMediaRequest(
-                            ActivityResultContracts.PickVisualMedia.ImageOnly
+        // Bottom Sheet
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    BottomSheetOption(
+                        icon = Icons.Default.PhotoCamera,
+                        text = "Take Photo"
+                    ) {
+                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    }
+                    BottomSheetOption(
+                        icon = Icons.Default.Image,
+                        text = "Add Image"
+                    ) {
+                        pickImageLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            )
                         )
+                    }
+                    BottomSheetOption(
+                        icon = Icons.Default.AttachFile,
+                        text = "Attach File"
+                    ) {
+                        pickFileLauncher.launch(arrayOf("*/*"))
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
+        }
+
+        // Upload Progress Overlay
+        if (isUploading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .zIndex(10f),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Uploading...",
+                        color = Color.White,
+                        fontSize = 16.sp
                     )
                 }
-                BottomSheetOption(
-                    icon = Icons.Default.AttachFile,
-                    text = "Attach File"
-                ) {
-                    pickFileLauncher.launch(arrayOf("*/*"))
-                }
-                Spacer(modifier = Modifier.height(20.dp))
             }
         }
-    }
-    
-    // Upload Progress Overlay
-    if (isUploading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .zIndex(10f),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                Text(
-                    "Uploading...",
-                    color = Color.White,
-                    fontSize = 16.sp
-                )
-            }
-        }
-    }
-    
-    // Upload Error Snackbar
-    uploadError?.let { error ->
-        LaunchedEffect(error) {
-            // Show error for 3 seconds then clear
-            kotlinx.coroutines.delay(3000)
-            uploadError = null
-        }
-    }
-        }
-    }
 
+        // Upload Error Snackbar
+        uploadError?.let { error ->
+            LaunchedEffect(error) {
+                // Show error for 3 seconds then clear
+                kotlinx.coroutines.delay(3000)
+                uploadError = null
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun FileAttachmentItem(fileName: String) {

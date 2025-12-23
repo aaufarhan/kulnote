@@ -11,7 +11,8 @@ sealed class NoteContentItem {
         val imageUri: String? = null,
         val widthPx: Int = 750,  // Default ~250dp @ 3x density
         val heightPx: Int = 600,  // Default ~200dp @ 3x density
-        val isInline: Boolean = true // true = inline dengan text, false = block
+        val isInline: Boolean = true, // true = inline dengan text, false = block
+        val widthFraction: Float = 0.92f // Fraksi lebar layar untuk render (dapat diubah user)
     ) : NoteContentItem()
 
     data class ImageGroup(

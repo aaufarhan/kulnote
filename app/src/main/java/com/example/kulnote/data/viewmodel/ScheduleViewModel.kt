@@ -29,7 +29,8 @@ class ScheduleViewModel(application: Application) : AndroidViewModel(application
     private val database = AppDatabase.getDatabase(application)
     private val repository = ScheduleRepository(
         apiService = ApiClient.apiService,
-        scheduleDao = database.scheduleDao()
+        scheduleDao = database.scheduleDao(),
+        context = application.applicationContext
     )
 
     // --- STATE FLOW BARU (Mengambil dari Repository/Room) ---
